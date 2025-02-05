@@ -3,6 +3,10 @@ Quickly copy/paste your code into an LLM. Vibes-based coding in 2025.
 
 ![Screenshot of app](folder2chat.png)
 
+Copy the report and paste into your favorite LLM
+
+![Another screenshot of app](folder2chat_report.png)
+
 Both the app and this README file were AI-generated because we're in 2025. I used mostly `o1` to few-shot the app, and `o3-mini-high` to review/patch the final product and produce this README.
 
 # Functionality
