@@ -9,6 +9,13 @@ Copy the report and paste into your favorite LLM
 
 Both the app and this README file were AI-generated because we're in 2025. I used mostly `o1` to few-shot the app, and `o3-mini-high` to review/patch the final product and produce this README.
 
+## To run the app
+
+Inside a Python environment do `pip install -r requirements.txt` and then
+```
+uvicorn main:app --reload
+```
+
 # Functionality
 ## folder2chat
 - Browse Folder: Opens a system dialog (if tkinter is available) to pick a folder.
