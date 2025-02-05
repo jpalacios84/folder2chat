@@ -154,10 +154,13 @@ def build_directory_tree(root_path: str, limit: int = 100, excluded: Optional[Se
     }
 
     try:
-        entries = sorted(os.listdir(root_path))
+        entries = os.listdir(root_path)
     except Exception as e:
         logger.error("Error listing directory %s: %s", root_path, e)
         return tree
+
+    # Sort entries: directories first (using os.path.isdir) then files, each alphabetically (case‐insensitive)
+    entries.sort(key=lambda x: (not os.path.isdir(os.path.join(root_path, x)), x.lower()))
 
     count = 0
     for entry in entries:
@@ -180,7 +183,6 @@ def build_directory_tree(root_path: str, limit: int = 100, excluded: Optional[Se
             break
 
     return tree
-
 
 @app.get("/directory-tree", response_class=JSONResponse)
 def directory_tree(folder: str, limit: int = 100) -> Dict[str, Any]:
@@ -231,7 +233,7 @@ def generate_report(files: str = Form(...)) -> Dict[str, Any]:
                 content = f"Could not read file: {e}"
 
             report_lines.append(f"File: {filename}")
-            report_lines.append(f"```{lang}\n{content}\n```")
+            report_lines.append(f"```{lang}\n{content.strip()}\n```")
             report_lines.append("")
         else:
             report_lines.append(f"File: {filename}")

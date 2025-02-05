@@ -313,9 +313,15 @@
       checkbox.type = "checkbox";
       checkbox.dataset.type = node.type;
       checkbox.dataset.path = node.path;
+      // Generate a unique id for the checkbox
+      const checkboxId = "checkbox-" + Math.random().toString(36).substr(2, 9);
+      checkbox.id = checkboxId;
 
       const label = document.createElement("label");
-      label.textContent = " " + node.name;
+      // Associate the label with the checkbox so that clicking it toggles the checkbox
+      label.setAttribute("for", checkboxId);
+      // Add a file icon (📄) before the file name
+      label.innerHTML = " 📄 " + node.name;
 
       labelDiv.appendChild(checkbox);
       labelDiv.appendChild(label);
