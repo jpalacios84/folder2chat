@@ -1,0 +1,31 @@
+{
+  "TEXT_EXTENSIONS": [
+    ".c",
+    ".cpp",
+    ".cs",
+    ".css",
+    ".csv",
+    ".html",
+    ".java",
+    ".js",
+    ".json",
+    ".jsx",
+    ".md",
+    ".php",
+    ".py",
+    ".sh",
+    ".ts",
+    ".txt"
+  ],
+  "DEFAULT_EXCLUDED_FOLDERS": [
+    ".git",
+    ".idea",
+    ".next",
+    ".venv",
+    ".vscode",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules"
+  ]
+}
