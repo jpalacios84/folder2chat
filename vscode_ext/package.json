@@ -2,7 +2,7 @@
     "name": "folder2chat",
     "displayName": "folder2chat",
     "description": "Quickly copy/paste your code into an LLM. Vibes-based coding in 2025.",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "publisher": "JosePalacios",
     "engines": {
         "vscode": "^1.93.1"
@@ -18,7 +18,7 @@
         "commands": [
             {
                 "command": "folder2chat.start",
-                "title": "Folder2Chat: Open"
+                "title": "folder2chat: Open"
             }
         ]
     },

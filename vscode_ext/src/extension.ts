@@ -20,8 +20,12 @@ let config = {
 
 /**
  * Recursively builds a directory tree.
+ * 
+ * This version filters out any files whose extensions
+ * are not in config.TEXT_EXTENSIONS.
  */
 function buildDirectoryTree(rootPath: string, limit: number = 100, excluded: string[] = []): any {
+    // If it's not a directory, just return a file node
     if (!fs.statSync(rootPath).isDirectory()) {
         return {
             name: path.basename(rootPath),
@@ -51,71 +55,82 @@ function buildDirectoryTree(rootPath: string, limit: number = 100, excluded: str
         const bPath = path.join(rootPath, b);
         const aIsDir = fs.statSync(aPath).isDirectory();
         const bIsDir = fs.statSync(bPath).isDirectory();
+
         if (aIsDir !== bIsDir) {
             return aIsDir ? -1 : 1;
         }
         return a.toLowerCase().localeCompare(b.toLowerCase());
     });
 
+    // Convert configured extensions to lowercase for consistency
+    const allowedExtensions = new Set(config.TEXT_EXTENSIONS.map(ext => ext.toLowerCase()));
+
     let count = 0;
     for (const entry of entries) {
         if (excluded.includes(entry)) {
+            // Skip explicitly excluded folders/files
             continue;
         }
+
         const fullPath = path.join(rootPath, entry);
-        let child;
         if (fs.statSync(fullPath).isDirectory()) {
-            child = buildDirectoryTree(fullPath, limit, excluded);
+            // Build subtree for directories
+            const child = buildDirectoryTree(fullPath, limit, excluded);
+            tree.children.push(child);
+            count++;
         } else {
-            child = {
-                name: entry,
-                path: fullPath,
-                type: "file"
-            };
+            // For files, filter by allowed extension
+            const ext = path.extname(entry).toLowerCase();
+            if (allowedExtensions.has(ext)) {
+                const child = {
+                    name: entry,
+                    path: fullPath,
+                    type: "file"
+                };
+                tree.children.push(child);
+                count++;
+            }
         }
-        tree.children.push(child);
-        count++;
+
         if (limit > 0 && count >= limit) {
             break;
         }
     }
+
     return tree;
 }
 
 /**
  * Generate a report from a list of file paths.
- * If extension matches config, read content; otherwise show "skipped".
+ * This version no longer checks the file extension:
+ * all files passed in will be read.
  */
 function generateReport(filePaths: string[]): string {
     const reportLines: string[] = [];
-    const allowedExtensions = new Set(config.TEXT_EXTENSIONS.map(ext => ext.toLowerCase()));
 
     for (const fullPath of filePaths) {
         if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
             continue;
         }
+
         const filename = path.basename(fullPath);
         const ext = path.extname(filename).toLowerCase();
         const lang = ext.substring(1) || "txt";
 
-        if (allowedExtensions.has(ext)) {
-            let content = "";
-            try {
-                content = fs.readFileSync(fullPath, { encoding: 'utf8' });
-            } catch (e) {
-                content = `Could not read file: ${e}`;
-            }
-            reportLines.push(`File: ${filename}`);
-            reportLines.push(`\`\`\`${lang}`);
-            reportLines.push(content.trim());
-            reportLines.push("```");
-            reportLines.push("");
-        } else {
-            reportLines.push(`File: ${filename}`);
-            reportLines.push("(Not a recognized text file — skipped.)");
-            reportLines.push("");
+        let content = "";
+        try {
+            content = fs.readFileSync(fullPath, { encoding: 'utf8' });
+        } catch (e) {
+            content = `Could not read file: ${e}`;
         }
+
+        reportLines.push(`File: ${filename}`);
+        reportLines.push(`\`\`\`${lang}`);
+        reportLines.push(content.trim());
+        reportLines.push("```");
+        reportLines.push("");
     }
+
     return reportLines.join("\n");
 }
 

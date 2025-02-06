@@ -134,12 +134,15 @@ def build_directory_tree(root_path: str, limit: int = 100, excluded: Optional[Se
     Recursively build a directory tree up to 'limit' items per folder.
     'excluded' is a set of folder names to skip.
     If limit <= 0, no limit is applied.
+
+    NOTE: This version filters out any files whose extensions are not in TEXT_EXTENSIONS.
     """
     if excluded is None:
         excluded = set()
 
+    # If it's not a directory, simply return a "file" node.
+    # But typically, you wouldn't call build_directory_tree on a single file.
     if not os.path.isdir(root_path):
-        # Not a directory -> return file node
         return {
             "name": os.path.basename(root_path),
             "path": root_path,
@@ -159,37 +162,45 @@ def build_directory_tree(root_path: str, limit: int = 100, excluded: Optional[Se
         logger.error("Error listing directory %s: %s", root_path, e)
         return tree
 
-    # Sort entries: directories first (using os.path.isdir) then files, each alphabetically (case‐insensitive)
+    # Sort so that directories appear first, then files, each alphabetically (case-insensitive)
     entries.sort(key=lambda x: (not os.path.isdir(os.path.join(root_path, x)), x.lower()))
 
     count = 0
     for entry in entries:
         if entry in excluded:
+            # Skip any folder that is explicitly excluded
             continue
 
         full_path = os.path.join(root_path, entry)
         if os.path.isdir(full_path):
+            # Recursively build tree for subdirectory
             child = build_directory_tree(full_path, limit=limit, excluded=excluded)
+            tree["children"].append(child)
+            count += 1
         else:
-            child = {
-                "name": entry,
-                "path": full_path,
-                "type": "file"
-            }
-        tree["children"].append(child)
+            # For files, check if their extension is in our allowed set
+            _, ext = os.path.splitext(entry)
+            if ext.lower() in TEXT_EXTENSIONS:
+                child = {
+                    "name": entry,
+                    "path": full_path,
+                    "type": "file"
+                }
+                tree["children"].append(child)
+                count += 1
 
-        count += 1
         if limit > 0 and count >= limit:
             break
 
     return tree
+
 
 @app.get("/directory-tree", response_class=JSONResponse)
 def directory_tree(folder: str, limit: int = 100) -> Dict[str, Any]:
     """
     Return a JSON "tree" of the specified folder,
     respecting the 'limit' items per directory,
-    and excluding any folders in EXCLUDED_FOLDERS (from config).
+    and excluding any folders in EXCLUDED_FOLDERS.
     """
     if not os.path.isdir(folder):
         return {"error": f"'{folder}' is not a valid directory."}
@@ -206,7 +217,9 @@ def directory_tree(folder: str, limit: int = 100) -> Dict[str, Any]:
 def generate_report(files: str = Form(...)) -> Dict[str, Any]:
     """
     Generate a report with the contents of the selected files.
-    Only files whose extension is in TEXT_EXTENSIONS are read.
+    This endpoint no longer checks for allowed extensions:
+    any files passed here are considered valid for reading as text.
+    
     'files' is a JSON-encoded list of absolute file paths.
     """
     try:
@@ -216,29 +229,24 @@ def generate_report(files: str = Form(...)) -> Dict[str, Any]:
         return {"error": f"Cannot parse 'files' JSON: {e}"}
 
     report_lines = []
-    allowed_extensions = {ext.lower() for ext in TEXT_EXTENSIONS}
     for full_path in file_paths:
         if not os.path.isfile(full_path):
+            # Skip if it's not a file
             continue
 
         filename = os.path.basename(full_path)
         _, ext = os.path.splitext(filename)
         lang = ext.lstrip(".") or "txt"
 
-        if ext.lower() in allowed_extensions:
-            try:
-                with open(full_path, "r", encoding="utf-8", errors="replace") as f:
-                    content = f.read()
-            except Exception as e:
-                content = f"Could not read file: {e}"
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        except Exception as e:
+            content = f"Could not read file: {e}"
 
-            report_lines.append(f"File: {filename}")
-            report_lines.append(f"```{lang}\n{content.strip()}\n```")
-            report_lines.append("")
-        else:
-            report_lines.append(f"File: {filename}")
-            report_lines.append("(Not a recognized text file — skipped.)")
-            report_lines.append("")
+        report_lines.append(f"File: {filename}")
+        report_lines.append(f"```{lang}\n{content.strip()}\n```")
+        report_lines.append("")  # Blank line separator
 
     full_report = "\n".join(report_lines)
     return {"report": full_report}
