@@ -1,0 +1,50 @@
+{
+    "name": "folder2chat",
+    "displayName": "folder2chat",
+    "description": "Quickly copy/paste your code into an LLM. Vibes-based coding in 2025.",
+    "version": "0.0.2",
+    "publisher": "JosePalacios",
+    "engines": {
+        "vscode": "^1.93.1"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:folder2chat.start"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "folder2chat.start",
+                "title": "Folder2Chat: Open"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./"
+    },
+    "devDependencies": {
+        "@types/node": "^18.19.75",
+        "typescript": "^4.9.0",
+        "vscode": "^1.1.37"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jpalacios84/folder2chat.git"
+    },
+    "keywords": [
+        "LLM",
+        "coding",
+        "productivity"
+    ],
+    "author": "Jose Palacios",
+    "license": "ISC",
+    "icon": "icon.png",
+    "bugs": {
+        "url": "https://github.com/jpalacios84/folder2chat/issues"
+    },
+    "homepage": "https://github.com/jpalacios84/folder2chat#readme"
+}

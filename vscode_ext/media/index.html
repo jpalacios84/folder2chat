@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>folder2chat</title>
+  <!-- Bootstrap 5.3+ (CDN) -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    /*
+      Make sure to allow both light and dark color schemes.
+      When you use :root { color-scheme: light dark; }, it hints
+      to the browser that we can handle both.
+    */
+    :root {
+      color-scheme: light dark;
+    }
+
+    body {
+      /* Use VS Code theme variables */
+      background-color: var(--vscode-editor-background);
+      color: var(--vscode-foreground);
+      font-family: var(--vscode-font-family);
+      margin: 0; /* Remove default body margin */
+      padding: 0;
+    }
+
+    /* Use a container with some padding, but no white box background. */
+    .container {
+      padding: 1rem;
+    }
+
+    /* Cards and accordions blend with VS Code side panel style. */
+    .card,
+    .accordion-item {
+      background-color: var(--vscode-sideBar-background) !important;
+      color: var(--vscode-sideBar-foreground) !important;
+      border: 1px solid var(--vscode-panel-border) !important;
+    }
+
+    .card-header,
+    .accordion-header {
+      background-color: var(--vscode-sideBarSectionHeader-background) !important;
+      color: var(--vscode-sideBarSectionHeader-foreground) !important;
+      border-bottom: 1px solid var(--vscode-panel-border) !important;
+    }
+
+    /* Buttons styled to match VS Code button colors. */
+    .btn {
+      border: 1px solid var(--vscode-button-border) !important;
+      color: var(--vscode-button-foreground) !important;
+      background-color: var(--vscode-button-background) !important;
+    }
+    .btn:hover {
+      background-color: var(--vscode-button-hoverBackground) !important;
+      color: var(--vscode-button-foreground) !important;
+    }
+
+    /* Inputs match the editor's background/foreground. */
+    .form-control {
+      background-color: var(--vscode-editor-background) !important;
+      color: var(--vscode-foreground) !important;
+      border: 1px solid var(--vscode-panel-border) !important;
+    }
+    .form-control::placeholder {
+      color: var(--vscode-input-placeholderForeground) !important;
+    }
+
+    /* Alerts adopt VS Code's "info/error/warning/success" color hints. */
+    .alert {
+      border-left: 4px solid;
+      margin-bottom: 1rem;
+    }
+    .alert-info {
+      background-color: var(--vscode-editor-background) !important;
+      color: var(--vscode-foreground) !important;
+      border-color: var(--vscode-editor-foreground) !important;
+    }
+    .alert-danger {
+      background-color: var(--vscode-inputValidation-errorBackground) !important;
+      color: var(--vscode-inputValidation-errorForeground) !important;
+      border-color: var(--vscode-inputValidation-errorBorder) !important;
+    }
+    .alert-warning {
+      background-color: var(--vscode-inputValidation-warningBackground) !important;
+      color: var(--vscode-inputValidation-warningForeground) !important;
+      border-color: var(--vscode-inputValidation-warningBorder) !important;
+    }
+    .alert-success {
+      background-color: var(--vscode-inputValidation-infoBackground) !important;
+      color: var(--vscode-inputValidation-infoForeground) !important;
+      border-color: var(--vscode-inputValidation-infoBorder) !important;
+    }
+
+    /* Tree indentation, using VS Code's theme color for the border. */
+    ul.tree,
+    ul.tree ul {
+      list-style-type: none;
+      padding-left: 1rem;
+      margin-left: 0.5rem;
+      border-left: 1px dashed var(--vscode-foreground);
+    }
+    .folder-label {
+      font-weight: 600;
+    }
+    .folder-label .folder-icon {
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="container my-4">
+  <!-- 1) First Card: "folder2chat" -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h2 class="h5 m-0">folder2chat</h2>
+    </div>
+    <div class="card-body">
+      <!-- Folder selection row -->
+      <div class="mb-3 d-flex flex-column flex-sm-row align-items-sm-center">
+        <button id="browseFolderBtn" class="btn btn-secondary me-3">Browse Folder</button>
+        <div class="mt-2 mt-sm-0" style="flex:1;">
+          <label for="folderPath" class="form-label">Selected Folder</label>
+          <input
+            type="text"
+            class="form-control"
+            id="folderPath"
+            placeholder="Folder path"
+          />
+        </div>
+      </div>
+
+      <!-- Tree container -->
+      <div id="treeContainer" class="my-3"></div>
+
+      <div class="d-flex gap-3 mt-3">
+        <button id="refreshTreeBtn" class="btn btn-secondary">Refresh Tree</button>
+        <button id="generateReportBtn" class="btn btn-success">Generate Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2) Second Card: "Global Settings" in a Bootstrap Accordion (collapsible) -->
+  <div class="accordion mb-4" id="settingsAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingSettings">
+        <button
+          class="accordion-button collapsed"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseSettings"
+          aria-expanded="false"
+          aria-controls="collapseSettings"
+        >
+          Global Settings
+        </button>
+      </h2>
+      <div
+        id="collapseSettings"
+        class="accordion-collapse collapse"
+        aria-labelledby="headingSettings"
+        data-bs-parent="#settingsAccordion"
+      >
+        <div class="accordion-body">
+          <div id="settingsAlerts"></div>
+
+          <div class="mb-3" style="max-width: 500px;">
+            <label for="limitInput" class="form-label">Items per folder (limit)</label>
+            <input type="number" class="form-control" id="limitInput" value="100" />
+          </div>
+
+          <div class="mb-3" style="max-width: 500px;">
+            <label for="textExtensionsInput" class="form-label">
+              Text Extensions (comma‐separated)
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="textExtensionsInput"
+              placeholder=".txt, .md, .py"
+            />
+          </div>
+
+          <div class="mb-3" style="max-width: 500px;">
+            <label for="defaultExcludedInput" class="form-label">
+              Default Excluded Folders (comma‐separated)
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="defaultExcludedInput"
+              placeholder=".git, node_modules"
+            />
+          </div>
+
+          <button id="saveSettingsBtn" class="btn btn-secondary">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3) Third Card: "Report" -->
+  <div class="card">
+    <!-- Hidden anchor for scrolling into view after "Generate Report" -->
+    <h3 id="reportHeadline" class="mt-3 mb-3 visually-hidden">Report Anchor</h3>
+    <div class="card-header">
+      <h2 class="h5 m-0">Report</h2>
+    </div>
+    <div class="card-body">
+      <div id="reportAlerts"></div>
+
+      <div class="mb-3 d-flex justify-content-between align-items-center">
+        <button id="copyReportBtn" class="btn btn-secondary">Copy to Clipboard</button>
+      </div>
+
+      <textarea
+        id="reportOutput"
+        class="form-control"
+        rows="24"
+        readonly
+        style="font-family: monospace;"
+      ></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- Include Bootstrap Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Acquire the VS Code API object.
+  const vscode = acquireVsCodeApi();
+
+  // DOM elements
+  const browseFolderBtn = document.getElementById("browseFolderBtn");
+  const folderPathInput = document.getElementById("folderPath");
+  const treeContainer = document.getElementById("treeContainer");
+  const refreshTreeBtn = document.getElementById("refreshTreeBtn");
+  const generateReportBtn = document.getElementById("generateReportBtn");
+  const reportOutput = document.getElementById("reportOutput");
+  const copyReportBtn = document.getElementById("copyReportBtn");
+  const reportHeadline = document.getElementById("reportHeadline");
+
+  // Settings fields
+  const limitInput = document.getElementById("limitInput");
+  const textExtensionsInput = document.getElementById("textExtensionsInput");
+  const defaultExcludedInput = document.getElementById("defaultExcludedInput");
+  const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+
+  /**
+   * Displays a Bootstrap alert message in a specified container.
+   */
+  function showAlert(message, type, containerId) {
+    const alertContainer = document.getElementById(containerId);
+    if (!alertContainer) return;
+    alertContainer.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `;
+  }
+
+  // Listen for messages from the extension host.
+  window.addEventListener('message', event => {
+    const message = event.data;
+    switch (message.command) {
+      case 'browseFolderResponse': {
+        if (message.folder) {
+          folderPathInput.value = message.folder;
+          loadTree();
+        } else {
+          showAlert("No folder selected.", "info", "reportAlerts");
+        }
+        break;
+      }
+      case 'directoryTreeResponse': {
+        if (message.error) {
+          showAlert(message.error, "danger", "reportAlerts");
+          treeContainer.innerHTML = "";
+        } else {
+          // If the extension also sent 'folder', populate the input
+          if (message.folder) {
+            folderPathInput.value = message.folder;
+          }
+          treeContainer.innerHTML = "";
+          const rootUl = renderTree(message.tree);
+          treeContainer.appendChild(rootUl);
+          showAlert("Tree loaded successfully.", "info", "reportAlerts");
+        }
+        break;
+      }
+      case 'generateReportResponse': {
+        if (message.error) {
+          showAlert("Error generating report: " + message.error, "danger", "reportAlerts");
+        } else if (message.report) {
+          reportOutput.value = message.report;
+          showAlert("Report generated successfully.", "success", "reportAlerts");
+          reportHeadline.scrollIntoView({ behavior: "smooth" });
+        }
+        break;
+      }
+      case 'configResponse': {
+        const conf = message.config;
+        if (conf && conf.TEXT_EXTENSIONS) {
+          textExtensionsInput.value = conf.TEXT_EXTENSIONS.join(", ");
+        }
+        if (conf && conf.DEFAULT_EXCLUDED_FOLDERS) {
+          defaultExcludedInput.value = conf.DEFAULT_EXCLUDED_FOLDERS.join(", ");
+        }
+        break;
+      }
+      case 'saveConfigResponse': {
+        if (message.success) {
+          showAlert("Settings saved successfully!", "success", "settingsAlerts");
+        } else {
+          showAlert("Error saving config.", "danger", "settingsAlerts");
+        }
+        break;
+      }
+      default:
+        console.error("Unknown message from extension:", message);
+    }
+  });
+
+  // Browse folder button
+  browseFolderBtn.addEventListener("click", () => {
+    vscode.postMessage({ command: 'browseFolder' });
+  });
+
+  // Load (refresh) the tree
+  function loadTree() {
+    const folder = folderPathInput.value.trim();
+    if (!folder) {
+      showAlert("Please select or enter a folder path.", "warning", "reportAlerts");
+      return;
+    }
+    const limitVal = parseInt(limitInput.value, 10) || 100;
+    vscode.postMessage({ command: 'loadTree', folder, limit: limitVal });
+  }
+
+  refreshTreeBtn.addEventListener("click", loadTree);
+
+  // Generate Report
+  generateReportBtn.addEventListener("click", () => {
+    const checkedBoxes = treeContainer.querySelectorAll('input[type="checkbox"]:checked');
+    const filePaths = [];
+    checkedBoxes.forEach(cb => {
+      if (cb.dataset.type === "file") {
+        filePaths.push(cb.dataset.path);
+      }
+    });
+    if (filePaths.length === 0) {
+      showAlert("No files selected.", "warning", "reportAlerts");
+      return;
+    }
+    vscode.postMessage({ command: 'generateReport', files: filePaths });
+  });
+
+  // Render the directory tree recursively
+  function renderTree(node) {
+    const ul = document.createElement("ul");
+    ul.className = "tree";
+    ul.appendChild(renderNode(node));
+    return ul;
+  }
+
+  function renderNode(node) {
+    const li = document.createElement("li");
+    const labelDiv = document.createElement("div");
+
+    if (node.type === "directory") {
+      const labelSpan = document.createElement("span");
+      labelSpan.classList.add("folder-label");
+      labelSpan.textContent = "📁 " + node.name;
+      labelDiv.appendChild(labelSpan);
+
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        const subUl = document.createElement("ul");
+        node.children.forEach(child => {
+          subUl.appendChild(renderNode(child));
+        });
+        li.appendChild(labelDiv);
+        li.appendChild(subUl);
+      } else {
+        li.appendChild(labelDiv);
+      }
+    } else {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.type = node.type;
+      checkbox.dataset.path = node.path;
+      // Generate a unique id for the checkbox
+      const checkboxId = "checkbox-" + Math.random().toString(36).substr(2, 9);
+      checkbox.id = checkboxId;
+
+      const label = document.createElement("label");
+      label.setAttribute("for", checkboxId);
+      label.innerHTML = " 📄 " + node.name;
+
+      labelDiv.appendChild(checkbox);
+      labelDiv.appendChild(label);
+      li.appendChild(labelDiv);
+    }
+    return li;
+  }
+
+  // Copy to clipboard
+  copyReportBtn.addEventListener("click", () => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(reportOutput.value).then(() => {
+        showAlert("Copied report to clipboard.", "info", "reportAlerts");
+      }).catch(() => {
+        showAlert("Failed to copy report.", "danger", "reportAlerts");
+      });
+    } else {
+      reportOutput.select();
+      document.execCommand("copy");
+      showAlert("Copied report to clipboard.", "info", "reportAlerts");
+    }
+  });
+
+  // Load config on startup
+  function loadConfig() {
+    vscode.postMessage({ command: 'getConfig' });
+  }
+  loadConfig();
+
+  // Save settings button
+  saveSettingsBtn.addEventListener("click", () => {
+    const extStr = textExtensionsInput.value.trim();
+    const defExcStr = defaultExcludedInput.value.trim();
+    const extArr = extStr ? extStr.split(",").map(s => s.trim()).filter(s => s) : [];
+    const defExcArr = defExcStr ? defExcStr.split(",").map(s => s.trim()).filter(s => s) : [];
+    vscode.postMessage({ command: 'saveConfig', config: { TEXT_EXTENSIONS: extArr, DEFAULT_EXCLUDED_FOLDERS: defExcArr } });
+  });
+</script>
+</body>
+</html>

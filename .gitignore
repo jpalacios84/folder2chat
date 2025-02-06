@@ -1,3 +1,7 @@
+# VS Code extension
+node_modules/
+*.vsix
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
