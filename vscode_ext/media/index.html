@@ -104,6 +104,7 @@
     }
     .folder-label {
       font-weight: 600;
+      cursor: pointer;
     }
     .folder-label .folder-icon {
       margin-right: 4px;
@@ -358,7 +359,7 @@
     vscode.postMessage({ command: 'generateReport', files: filePaths });
   });
 
-  // Render the directory tree recursively
+  // Render the directory tree recursively with collapsible subfolders
   function renderTree(node) {
     const ul = document.createElement("ul");
     ul.className = "tree";
@@ -373,25 +374,50 @@
     if (node.type === "directory") {
       const labelSpan = document.createElement("span");
       labelSpan.classList.add("folder-label");
-      labelSpan.textContent = "📁 " + node.name;
-      labelDiv.appendChild(labelSpan);
-
+      
+      // If the directory has children, add a toggle icon and make it clickable.
       if (Array.isArray(node.children) && node.children.length > 0) {
+        const toggleIcon = document.createElement("span");
+        toggleIcon.classList.add("folder-icon");
+        toggleIcon.textContent = "►";
+        labelSpan.appendChild(toggleIcon);
+
+        const folderText = document.createElement("span");
+        folderText.textContent = " " + node.name;
+        labelSpan.appendChild(folderText);
+        labelDiv.appendChild(labelSpan);
+
         const subUl = document.createElement("ul");
+        subUl.style.display = "none"; // start collapsed
         node.children.forEach(child => {
           subUl.appendChild(renderNode(child));
         });
         li.appendChild(labelDiv);
         li.appendChild(subUl);
+
+        // Toggle the display of the subfolder list when clicking the label
+        labelSpan.addEventListener("click", () => {
+          if (subUl.style.display === "none") {
+            subUl.style.display = "block";
+            toggleIcon.textContent = "▼";
+          } else {
+            subUl.style.display = "none";
+            toggleIcon.textContent = "►";
+          }
+        });
       } else {
+        // Directory with no children – render normally.
+        labelSpan.textContent = "📁 " + node.name;
+        labelDiv.appendChild(labelSpan);
         li.appendChild(labelDiv);
       }
     } else {
+      // Render a file node with a checkbox.
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.dataset.type = node.type;
       checkbox.dataset.path = node.path;
-      // Generate a unique id for the checkbox
+      // Generate a unique id for the checkbox.
       const checkboxId = "checkbox-" + Math.random().toString(36).substr(2, 9);
       checkbox.id = checkboxId;
 

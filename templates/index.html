@@ -19,8 +19,9 @@
     }
     .folder-label {
       font-weight: 600;
+      cursor: pointer;
     }
-    .folder-label .folder-icon {
+    .folder-icon {
       margin-right: 4px;
     }
   </style>
@@ -280,7 +281,7 @@
     }
   });
 
-  // Render the directory tree recursively
+  // Render the directory tree recursively with collapsible subfolders
   function renderTree(node) {
     const ul = document.createElement("ul");
     ul.className = "tree";
@@ -295,20 +296,46 @@
     if (node.type === "directory") {
       const labelSpan = document.createElement("span");
       labelSpan.classList.add("folder-label");
-      labelSpan.textContent = "📁 " + node.name;
+
+      // Create toggle icon element – using ► for collapsed state and ▼ for expanded state.
+      const toggleIcon = document.createElement("span");
+      toggleIcon.classList.add("folder-icon");
+      toggleIcon.textContent = "►";
+      labelSpan.appendChild(toggleIcon);
+
+      // Add the folder name text
+      const folderText = document.createElement("span");
+      folderText.textContent = " " + node.name;
+      labelSpan.appendChild(folderText);
+
       labelDiv.appendChild(labelSpan);
 
       if (Array.isArray(node.children) && node.children.length > 0) {
         const subUl = document.createElement("ul");
+        // Initially collapse subfolders
+        subUl.style.display = "none";
         node.children.forEach(child => {
           subUl.appendChild(renderNode(child));
         });
         li.appendChild(labelDiv);
         li.appendChild(subUl);
+
+        // Toggle subfolder display when the folder label is clicked
+        labelSpan.addEventListener("click", () => {
+          if (subUl.style.display === "none") {
+            subUl.style.display = "block";
+            toggleIcon.textContent = "▼";
+          } else {
+            subUl.style.display = "none";
+            toggleIcon.textContent = "►";
+          }
+        });
       } else {
+        // Directory with no children (non-collapsible)
         li.appendChild(labelDiv);
       }
     } else {
+      // Render file node with a checkbox
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.dataset.type = node.type;
