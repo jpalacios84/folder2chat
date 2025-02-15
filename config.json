@@ -26,6 +26,9 @@
     "__pycache__",
     "build",
     "dist",
-    "node_modules"
+    "node_modules",
+    "public",
+    "scraping_engine",
+    "snapshots"
   ]
 }
