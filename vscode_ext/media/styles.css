@@ -1,0 +1,89 @@
+:root {
+    color-scheme: light dark;
+  }
+  
+  body {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-font-family);
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    padding: 1rem;
+  }
+  
+  .card,
+  .accordion-item {
+    background-color: var(--vscode-sideBar-background) !important;
+    color: var(--vscode-sideBar-foreground) !important;
+    border: 1px solid var(--vscode-panel-border) !important;
+  }
+  
+  .card-header,
+  .accordion-header {
+    background-color: var(--vscode-sideBarSectionHeader-background) !important;
+    color: var(--vscode-sideBarSectionHeader-foreground) !important;
+    border-bottom: 1px solid var(--vscode-panel-border) !important;
+  }
+  
+  .btn {
+    border: 1px solid var(--vscode-button-border) !important;
+    color: var(--vscode-button-foreground) !important;
+    background-color: var(--vscode-button-background) !important;
+  }
+  .btn:hover {
+    background-color: var(--vscode-button-hoverBackground) !important;
+    color: var(--vscode-button-foreground) !important;
+  }
+  
+  .form-control {
+    background-color: var(--vscode-editor-background) !important;
+    color: var(--vscode-foreground) !important;
+    border: 1px solid var(--vscode-panel-border) !important;
+  }
+  .form-control::placeholder {
+    color: var(--vscode-input-placeholderForeground) !important;
+  }
+  
+  .alert {
+    border-left: 4px solid;
+    margin-bottom: 1rem;
+  }
+  .alert-info {
+    background-color: var(--vscode-editor-background) !important;
+    color: var(--vscode-foreground) !important;
+    border-color: var(--vscode-editor-foreground) !important;
+  }
+  .alert-danger {
+    background-color: var(--vscode-inputValidation-errorBackground) !important;
+    color: var(--vscode-inputValidation-errorForeground) !important;
+    border-color: var(--vscode-inputValidation-errorBorder) !important;
+  }
+  .alert-warning {
+    background-color: var(--vscode-inputValidation-warningBackground) !important;
+    color: var(--vscode-inputValidation-warningForeground) !important;
+    border-color: var(--vscode-inputValidation-warningBorder) !important;
+  }
+  .alert-success {
+    background-color: var(--vscode-inputValidation-infoBackground) !important;
+    color: var(--vscode-inputValidation-infoForeground) !important;
+    border-color: var(--vscode-inputValidation-infoBorder) !important;
+  }
+  
+  ul.tree,
+  ul.tree ul {
+    list-style-type: none;
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    border-left: 1px dashed var(--vscode-foreground);
+  }
+  .folder-label {
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .folder-label .folder-icon {
+    margin-right: 4px;
+  }
+  

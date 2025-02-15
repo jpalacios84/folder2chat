@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.5] - 2025-02-06
+### Added
+- Split the baseline into multiple smaller files for ease for maintenance
+- Added an "Include tree in report" option
+- Added full path to files in the report
+
 ## [0.0.4] - 2025-02-06
 ### Added
 - Added collapsible subfolders to root folder tree
