@@ -3,9 +3,35 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { buildDirectoryTree } from './treeBuilder';
 import { generateReport } from './reportGenerator';
-import { config, updateConfig } from './config';
+import { config, updateConfig, DEFAULT_TEXT_EXTENSIONS, DEFAULT_EXCLUDED_FOLDERS } from './config';
+
+// Helper function to load configuration from VS Code settings
+function loadConfiguration() {
+    const configuration = vscode.workspace.getConfiguration('folder2chat');
+    
+    // Get stored settings, falling back to defaults from config.ts
+    const textExtensions = configuration.get<string[]>('textExtensions', DEFAULT_TEXT_EXTENSIONS);
+    const defaultExcludedFolders = configuration.get<string[]>('defaultExcludedFolders', DEFAULT_EXCLUDED_FOLDERS);
+    
+    // Update the in-memory config for the current session
+    updateConfig({
+        TEXT_EXTENSIONS: textExtensions,
+        DEFAULT_EXCLUDED_FOLDERS: defaultExcludedFolders
+    });
+}
+
 
 export function activate(context: vscode.ExtensionContext) {
+    // Load config as soon as the extension is activated
+    loadConfiguration();
+
+    // Listen for changes to the configuration
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('folder2chat')) {
+            loadConfiguration();
+        }
+    }));
+    
     context.subscriptions.push(
         vscode.commands.registerCommand('folder2chat.start', () => {
             const panel = vscode.window.createWebviewPanel(
@@ -14,16 +40,14 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.ViewColumn.One,
                 {
                     enableScripts: true,
-                    retainContextWhenHidden: true,  // <-- This preserves state when the webview is hidden
+                    retainContextWhenHidden: true,
                     localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'media'))]
                 }
             );
 
-            // Load the HTML content from media/index.html
             const htmlPath = path.join(context.extensionUri.fsPath, 'media', 'index.html');
             let html = fs.readFileSync(htmlPath, 'utf8');
 
-            // Get the URIs for your local assets using joinPath
             const styleUri = panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(context.extensionUri, 'media', 'styles.css')
             );
@@ -31,18 +55,15 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.Uri.joinPath(context.extensionUri, 'media', 'main.js')
             );
 
-            // Replace the placeholders in the HTML with the proper URIs.
             html = html.replace(/%STYLE_URI%/g, styleUri.toString())
                        .replace(/%SCRIPT_URI%/g, scriptUri.toString());
 
             panel.webview.html = html;
 
-            // Optional: Auto-load the first workspace folder if available.
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (workspaceFolders && workspaceFolders.length > 0) {
                 const workspaceFolder = workspaceFolders[0].uri.fsPath;
                 const limit = 100;
-                // Build the tree for the file explorer (this tree still shows the full hierarchy)
                 const tree = buildDirectoryTree(workspaceFolder, limit, config.DEFAULT_EXCLUDED_FOLDERS);
                 panel.webview.postMessage({
                     command: 'directoryTreeResponse',
@@ -51,7 +72,6 @@ export function activate(context: vscode.ExtensionContext) {
                 });
             }
 
-            // Handle messages from the webview.
             panel.webview.onDidReceiveMessage(async message => {
                 switch (message.command) {
                     case 'browseFolder': {
@@ -61,8 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
                             canSelectMany: false
                         });
                         if (result && result.length > 0) {
-                            const folder = result[0].fsPath;
-                            panel.webview.postMessage({ command: 'browseFolderResponse', folder });
+                            panel.webview.postMessage({ command: 'browseFolderResponse', folder: result[0].fsPath });
                         } else {
                             panel.webview.postMessage({ command: 'browseFolderResponse', folder: '' });
                         }
@@ -77,7 +96,6 @@ export function activate(context: vscode.ExtensionContext) {
                                 error: `'${folder}' is not a valid directory.`
                             });
                         } else {
-                            // Rebuild the tree for the file explorer view.
                             const tree = buildDirectoryTree(folder, limit, config.DEFAULT_EXCLUDED_FOLDERS);
                             panel.webview.postMessage({ command: 'directoryTreeResponse', tree });
                         }
@@ -91,7 +109,6 @@ export function activate(context: vscode.ExtensionContext) {
                               error: "No files selected."
                           });
                       } else {
-                          // Get the checkbox value and the selected root folder from the message.
                           const includeTree: boolean = message.includeTree;
                           const rootFolder: string = message.rootFolder;
                           const report = generateReport(files, includeTree, rootFolder);
@@ -100,6 +117,8 @@ export function activate(context: vscode.ExtensionContext) {
                       break;
                   }
                     case 'getConfig': {
+                        // Ensure the latest config is loaded before sending
+                        loadConfiguration();
                         panel.webview.postMessage({
                             command: 'configResponse',
                             config
@@ -108,10 +127,14 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                     case 'saveConfig': {
                         const newConfig = message.config;
-                        updateConfig({
-                            TEXT_EXTENSIONS: newConfig.TEXT_EXTENSIONS,
-                            DEFAULT_EXCLUDED_FOLDERS: newConfig.DEFAULT_EXCLUDED_FOLDERS
-                        });
+                        const configuration = vscode.workspace.getConfiguration('folder2chat');
+
+                        // Persist settings globally
+                        await configuration.update('textExtensions', newConfig.TEXT_EXTENSIONS, vscode.ConfigurationTarget.Global);
+                        await configuration.update('defaultExcludedFolders', newConfig.DEFAULT_EXCLUDED_FOLDERS, vscode.ConfigurationTarget.Global);
+                        
+                        // The onDidChangeConfiguration listener will handle updating the in-memory 'config'
+                        
                         panel.webview.postMessage({ command: 'saveConfigResponse', success: true });
                         break;
                     }

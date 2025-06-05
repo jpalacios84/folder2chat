@@ -1,8 +1,8 @@
 {
     "name": "folder2chat",
     "displayName": "folder2chat",
-    "description": "Quickly copy/paste your code into an LLM. Vibes-based coding in 2025.",
-    "version": "0.0.5",
+    "description": "Quickly copy/paste your code into an LLM. Vibe coding in 2025.",
+    "version": "0.0.6",
     "publisher": "JosePalacios",
     "engines": {
         "vscode": "^1.96.0"
@@ -11,7 +11,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:folder2chat.start"
+        
     ],
     "main": "./dist/extension.js",
     "contributes": {
@@ -20,7 +20,22 @@
                 "command": "folder2chat.start",
                 "title": "folder2chat: Open"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "folder2chat",
+            "properties": {
+                "folder2chat.textExtensions": {
+                    "type": "array",
+                    "default": [".txt", ".md", ".py", ".html", ".css", ".js", ".json", ".csv", ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx"],
+                    "description": "File extensions to be treated as text files for the report."
+                },
+                "folder2chat.defaultExcludedFolders": {
+                    "type": "array",
+                    "default": [".git", "__pycache__", ".vscode", ".idea", ".venv", "node_modules", "dist", "build", ".next"],
+                    "description": "Folders to be excluded from the directory tree by default."
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

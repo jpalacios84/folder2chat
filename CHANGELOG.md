@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.6] - 2025-06-05
+### Added
+- Fixed "Save Settings" in "Global Settings" section
+
 ## [0.0.5] - 2025-02-06
 ### Added
 - Split the baseline into multiple smaller files for ease for maintenance
