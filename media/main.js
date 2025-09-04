@@ -6,6 +6,7 @@ const browseFolderBtn = document.getElementById("browseFolderBtn");
 const folderPathInput = document.getElementById("folderPath");
 const treeContainer = document.getElementById("treeContainer");
 const refreshTreeBtn = document.getElementById("refreshTreeBtn");
+const selectAllBtn = document.getElementById("selectAllBtn");
 const generateReportBtn = document.getElementById("generateReportBtn");
 const reportOutput = document.getElementById("reportOutput");
 const copyReportBtn = document.getElementById("copyReportBtn");
@@ -129,6 +130,13 @@ function loadTree() {
 }
 
 refreshTreeBtn.addEventListener("click", loadTree);
+
+selectAllBtn.addEventListener("click", () => {
+  const allCheckboxes = treeContainer.querySelectorAll('input[type="checkbox"]');
+  allCheckboxes.forEach(cb => {
+    cb.checked = true;
+  });
+});
 
 // Generate Report
 generateReportBtn.addEventListener("click", () => {
