@@ -2,7 +2,7 @@
     "name": "folder2chat",
     "displayName": "folder2chat",
     "description": "Quickly copy/paste your code into an LLM. Vibe coding in 2025.",
-    "version": "0.0.6",
+    "version": "0.1.0",
     "publisher": "JosePalacios",
     "engines": {
         "vscode": "^1.96.0"

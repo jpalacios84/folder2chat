@@ -84,7 +84,26 @@ window.addEventListener('message', event => {
       if (message.success) {
         showAlert("Settings saved successfully!", "success", "settingsAlerts");
       } else {
-        showAlert("Error saving config.", "danger", "settingsAlerts");
+        const errorMessage = message.error || "Error saving config.";
+        showAlert(errorMessage, "danger", "settingsAlerts");
+      }
+      break;
+    }
+    case 'workspaceState': {
+      const workspaceRadio = document.getElementById('saveTargetWorkspace');
+      const workspaceLabel = document.querySelector('label[for="saveTargetWorkspace"]');
+      if (workspaceRadio && workspaceLabel) {
+          workspaceRadio.disabled = !message.hasWorkspace;
+          if (!message.hasWorkspace) {
+              document.getElementById('saveTargetGlobal').checked = true;
+              workspaceLabel.title = "A folder or workspace must be open to save project-specific settings.";
+              workspaceRadio.parentElement.style.opacity = '0.6';
+              workspaceRadio.parentElement.style.cursor = 'not-allowed';
+          } else {
+              workspaceLabel.title = "";
+              workspaceRadio.parentElement.style.opacity = '1';
+              workspaceRadio.parentElement.style.cursor = 'default';
+          }
       }
       break;
     }
@@ -225,5 +244,6 @@ saveSettingsBtn.addEventListener("click", () => {
   const defExcStr = defaultExcludedInput.value.trim();
   const extArr = extStr ? extStr.split(",").map(s => s.trim()).filter(s => s) : [];
   const defExcArr = defExcStr ? defExcStr.split(",").map(s => s.trim()).filter(s => s) : [];
-  vscode.postMessage({ command: 'saveConfig', config: { TEXT_EXTENSIONS: extArr, DEFAULT_EXCLUDED_FOLDERS: defExcArr } });
+  const saveTarget = document.querySelector('input[name="saveTarget"]:checked').value;
+  vscode.postMessage({ command: 'saveConfig', config: { TEXT_EXTENSIONS: extArr, DEFAULT_EXCLUDED_FOLDERS: defExcArr }, target: saveTarget });
 });

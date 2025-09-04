@@ -61,6 +61,13 @@ export function activate(context: vscode.ExtensionContext) {
             panel.webview.html = html;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
+
+            // Inform the webview if a workspace is open
+            panel.webview.postMessage({
+                command: 'workspaceState',
+                hasWorkspace: !!(workspaceFolders && workspaceFolders.length > 0)
+            });
+
             if (workspaceFolders && workspaceFolders.length > 0) {
                 const workspaceFolder = workspaceFolders[0].uri.fsPath;
                 const limit = 100;
@@ -127,15 +134,38 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                     case 'saveConfig': {
                         const newConfig = message.config;
+                        const targetValue = message.target; // 'workspace' or 'global'
+                
+                        if (targetValue === 'workspace') {
+                            if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+                                panel.webview.postMessage({
+                                    command: 'saveConfigResponse',
+                                    success: false,
+                                    error: 'A folder or workspace must be open to save settings to the workspace.'
+                                });
+                                return;
+                            }
+                        }
+                
+                        const target = targetValue === 'workspace'
+                            ? vscode.ConfigurationTarget.Workspace
+                            : vscode.ConfigurationTarget.Global;
+                
                         const configuration = vscode.workspace.getConfiguration('folder2chat');
-
-                        // Persist settings globally
-                        await configuration.update('textExtensions', newConfig.TEXT_EXTENSIONS, vscode.ConfigurationTarget.Global);
-                        await configuration.update('defaultExcludedFolders', newConfig.DEFAULT_EXCLUDED_FOLDERS, vscode.ConfigurationTarget.Global);
-                        
-                        // The onDidChangeConfiguration listener will handle updating the in-memory 'config'
-                        
-                        panel.webview.postMessage({ command: 'saveConfigResponse', success: true });
+                
+                        try {
+                            // Persist settings
+                            await configuration.update('textExtensions', newConfig.TEXT_EXTENSIONS, target);
+                            await configuration.update('defaultExcludedFolders', newConfig.DEFAULT_EXCLUDED_FOLDERS, target);
+                
+                            panel.webview.postMessage({ command: 'saveConfigResponse', success: true });
+                        } catch (error) {
+                            let errorMessage = 'An unknown error occurred while saving settings.';
+                            if (error instanceof Error) {
+                                errorMessage = error.message;
+                            }
+                            panel.webview.postMessage({ command: 'saveConfigResponse', success: false, error: errorMessage });
+                        }
                         break;
                     }
                     default:

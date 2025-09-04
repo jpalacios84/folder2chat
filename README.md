@@ -1,20 +1,17 @@
 # folder2chat
 Quickly copy/paste your code into an LLM. Vibes-based coding in 2025.
 
-![Screenshot of app](folder2chat.png)
+![Screenshot of app](folder2chat_vs.png)
 
 Copy the report and paste into your favorite LLM
 
-![Another screenshot of app](folder2chat_report.png)
+![Another screenshot of app](folder2chat_report_vs.png)
 
 Both the app and this README file were AI-generated because we're in 2025. I used mostly `o1` to few-shot the app, and `o3-mini-high` to review/patch the final product and produce this README.
 
-## To run the app
+## To run the extension
 
-Inside a Python environment do `pip install -r requirements.txt` and then
-```
-uvicorn main:app --reload
-```
+Find `folder2chat` in the extensions marketplace and install. `ctrl+p` and `>folder2chat`
 
 # Functionality
 ## folder2chat
