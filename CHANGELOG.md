@@ -5,6 +5,8 @@
 - **BREAKING CHANGE**: Deprecated the Python FastAPI application. The project is now solely a Visual Studio Code extension.
 - Moved all VS Code extension files to the root of the project.
 - Updated README.md and project structure to reflect the focus on the VS Code extension.
+- Revamped UI and included optional instructions for the output report
+- Settings can now be saved locally and globally
 
 ## [0.0.6] - 2025-06-05
 ### Added

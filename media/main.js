@@ -1,257 +1,417 @@
-// Acquire the VS Code API object.
 const vscode = acquireVsCodeApi();
 
-// DOM elements
+// DOM
 const browseFolderBtn = document.getElementById("browseFolderBtn");
-const folderPathInput = document.getElementById("folderPath");
-const treeContainer = document.getElementById("treeContainer");
-const refreshTreeBtn = document.getElementById("refreshTreeBtn");
-const selectAllBtn = document.getElementById("selectAllBtn");
-const generateReportBtn = document.getElementById("generateReportBtn");
-const reportOutput = document.getElementById("reportOutput");
-const copyReportBtn = document.getElementById("copyReportBtn");
-const reportHeadline = document.getElementById("reportHeadline");
-const includeTreeCheckbox = document.getElementById("includeTreeCheckbox");
+const folderPathInput  = document.getElementById("folderPath");
+const refreshTreeBtn   = document.getElementById("refreshTreeBtn");
+const selectAllBtn     = document.getElementById("selectAllBtn");
+const selectNoneBtn    = document.getElementById("selectNoneBtn");
+const expandAllBtn     = document.getElementById("expandAllBtn");
+const collapseAllBtn   = document.getElementById("collapseAllBtn");
+const treeContainer    = document.getElementById("treeContainer");
+const generateBtn      = document.getElementById("generateReportBtn");
+const includeTreeCb    = document.getElementById("includeTreeCheckbox");
+const includeInstructionsCb = document.getElementById("includeInstructionsCheckbox");
+const reportOutput     = document.getElementById("reportOutput");
+const copyBtn          = document.getElementById("copyReportBtn");
+const statsBadge       = document.getElementById("statsBadge");
+const spinner          = document.getElementById("spinner");
+const extChips         = document.getElementById("extChips");
 
-// Settings fields
+// Settings
 const limitInput = document.getElementById("limitInput");
 const textExtensionsInput = document.getElementById("textExtensionsInput");
 const defaultExcludedInput = document.getElementById("defaultExcludedInput");
 const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+const settingsAlerts = document.getElementById("settingsAlerts");
 
-/**
- * Displays a Bootstrap alert message in a specified container.
- */
-function showAlert(message, type, containerId) {
-  const alertContainer = document.getElementById(containerId);
-  if (!alertContainer) return;
-  alertContainer.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  `;
+// State
+let currentTree = null;
+let allowedExts = [];
+let selectedExtFilters = new Set();
+let projectExts = new Set();
+let hasWorkspace = false;
+// State flags for robust initial loading
+let treeDataReceived = false;
+let configDataReceived = false;
+
+const setBusy = (busy) => spinner.classList.toggle("d-none", !busy);
+
+function setSettingsMessage(msg, ok = true) {
+  settingsAlerts.textContent = msg || "";
+  settingsAlerts.className = "small " + (ok ? "text-success" : "text-danger");
 }
 
-// Listen for messages from the extension host.
-window.addEventListener('message', event => {
-  const message = event.data;
-  switch (message.command) {
-    case 'browseFolderResponse': {
-      if (message.folder) {
-        folderPathInput.value = message.folder;
+// Gatekeeper for the initial UI setup. Waits for both the tree and config to arrive.
+function performInitialSetup() {
+    if (!treeDataReceived || !configDataReceived) return;
+
+    const savedState = vscode.getState();
+    // Only apply saved state if it's for the currently loaded folder.
+    if (savedState && savedState.folder === folderPathInput.value) {
+        renderTree();
+        applyState(savedState);
+    } else {
+        // This is a fresh session or a new folder, so we perform auto-selection.
+        selectedExtFilters = new Set(
+            [...projectExts].filter(ext => allowedExts.includes(ext))
+        );
+        
+        renderTree(true); // Render the tree with the new filters applied.
+        
+        // Manually update the chip UI to reflect the new filter state.
+        Array.from(extChips.children).forEach(ch => {
+            ch.classList.toggle("active", selectedExtFilters.has(ch.textContent));
+        });
+        
+        // Save this calculated initial state.
+        saveState();
+    }
+}
+
+
+// Messages from extension
+window.addEventListener("message", (event) => {
+  const msg = event.data;
+  switch (msg.command) {
+    case "workspaceState":
+      hasWorkspace = !!msg.hasWorkspace;
+      if (!hasWorkspace) document.getElementById("saveTargetWorkspace").disabled = true;
+      break;
+
+    case "directoryTreeResponse":
+      setBusy(false);
+      if (msg.error) {
+        currentTree = null;
+        treeContainer.innerHTML = `<p class="p-2 text-danger small">${msg.error}</p>`;
+        return;
+      }
+      if (msg.folder) folderPathInput.value = msg.folder;
+      currentTree = msg.tree;
+      projectExts = collectProjectExts(currentTree);
+      
+      treeDataReceived = true;
+      performInitialSetup();
+      break;
+
+    case "browseFolderResponse":
+      if (msg.folder) {
+        folderPathInput.value = msg.folder;
         loadTree();
-      } else {
-        showAlert("No folder selected.", "info", "reportAlerts");
       }
       break;
-    }
-    case 'directoryTreeResponse': {
-      if (message.error) {
-        showAlert(message.error, "danger", "reportAlerts");
-        treeContainer.innerHTML = "";
-      } else {
-        if (message.folder) {
-          folderPathInput.value = message.folder;
-        }
-        treeContainer.innerHTML = "";
-        const rootUl = renderTree(message.tree);
-        treeContainer.appendChild(rootUl);
-        showAlert("Tree loaded successfully.", "info", "reportAlerts");
-      }
+
+    case "generateReportResponse":
+      setBusy(false);
+      if (msg.error) return;
+      reportOutput.value = msg.report || "";
+      const s = msg.stats || {};
+      statsBadge.textContent = s.files != null
+        ? `${s.files} files • ${s.lines ?? "-"} lines • ${s.bytes ?? "-"} bytes • ~${s.tokens ?? "-"} tok`
+        : "";
       break;
-    }
-    case 'generateReportResponse': {
-      if (message.error) {
-        showAlert("Error generating report: " + message.error, "danger", "reportAlerts");
-      } else if (message.report) {
-        reportOutput.value = message.report;
-        showAlert("Report generated successfully.", "success", "reportAlerts");
-        reportHeadline.scrollIntoView({ behavior: "smooth" });
-      }
-      break;
-    }
-    case 'configResponse': {
-      const conf = message.config;
-      if (conf && conf.TEXT_EXTENSIONS) {
+
+    case "configResponse":
+      const conf = msg.config || {};
+      if (conf.TEXT_EXTENSIONS) {
+        allowedExts = conf.TEXT_EXTENSIONS;
         textExtensionsInput.value = conf.TEXT_EXTENSIONS.join(", ");
+        renderExtChips(conf.TEXT_EXTENSIONS);
       }
-      if (conf && conf.DEFAULT_EXCLUDED_FOLDERS) {
+      if (conf.DEFAULT_EXCLUDED_FOLDERS) {
         defaultExcludedInput.value = conf.DEFAULT_EXCLUDED_FOLDERS.join(", ");
       }
+      
+      configDataReceived = true;
+      performInitialSetup();
       break;
-    }
-    case 'saveConfigResponse': {
-      if (message.success) {
-        showAlert("Settings saved successfully!", "success", "settingsAlerts");
-      } else {
-        const errorMessage = message.error || "Error saving config.";
-        showAlert(errorMessage, "danger", "settingsAlerts");
-      }
+
+    case "saveConfigResponse":
+      setSettingsMessage(msg.success ? "Settings saved." : (msg.error || "Error saving settings."), !!msg.success);
       break;
-    }
-    case 'workspaceState': {
-      const workspaceRadio = document.getElementById('saveTargetWorkspace');
-      const workspaceLabel = document.querySelector('label[for="saveTargetWorkspace"]');
-      if (workspaceRadio && workspaceLabel) {
-          workspaceRadio.disabled = !message.hasWorkspace;
-          if (!message.hasWorkspace) {
-              document.getElementById('saveTargetGlobal').checked = true;
-              workspaceLabel.title = "A folder or workspace must be open to save project-specific settings.";
-              workspaceRadio.parentElement.style.opacity = '0.6';
-              workspaceRadio.parentElement.style.cursor = 'not-allowed';
-          } else {
-              workspaceLabel.title = "";
-              workspaceRadio.parentElement.style.opacity = '1';
-              workspaceRadio.parentElement.style.cursor = 'default';
-          }
-      }
-      break;
-    }
+
     default:
-      console.error("Unknown message from extension:", message);
+      console.error("Unknown message", msg);
   }
 });
 
-// Browse folder button
-browseFolderBtn.addEventListener("click", () => {
-  vscode.postMessage({ command: 'browseFolder' });
-});
+// Init
+(function init() {
+  vscode.postMessage({ command: "getConfig" });
+  vscode.postMessage({ command: "loadTreeOnStartup" });
+})();
 
-// Load (refresh) the tree
+browseFolderBtn.addEventListener("click", () => vscode.postMessage({ command: "browseFolder" }));
+refreshTreeBtn.addEventListener("click", loadTree);
 function loadTree() {
   const folder = folderPathInput.value.trim();
-  if (!folder) {
-    showAlert("Please select or enter a folder path.", "warning", "reportAlerts");
-    return;
-  }
+  if (!folder) return;
+  // Reset state for the new folder load
+  treeDataReceived = false;
+  configDataReceived = false;
+  setBusy(true);
   const limitVal = parseInt(limitInput.value, 10) || 100;
-  vscode.postMessage({ command: 'loadTree', folder, limit: limitVal });
+  // Request both tree and config again
+  vscode.postMessage({ command: "loadTree", folder, limit: limitVal });
+  vscode.postMessage({ command: "getConfig" });
 }
 
-refreshTreeBtn.addEventListener("click", loadTree);
-
-selectAllBtn.addEventListener("click", () => {
-  const allCheckboxes = treeContainer.querySelectorAll('input[type="checkbox"]');
-  allCheckboxes.forEach(cb => {
-    cb.checked = true;
-  });
-});
-
-// Generate Report
-generateReportBtn.addEventListener("click", () => {
-  const checkedBoxes = treeContainer.querySelectorAll('input[type="checkbox"]:checked');
-  const filePaths = [];
-  checkedBoxes.forEach(cb => {
-    if (cb.dataset.type === "file") {
-      filePaths.push(cb.dataset.path);
+function collectProjectExts(node) {
+  const set = new Set();
+  (function walk(n) {
+    if (!n) return;
+    if (n.type === "file") {
+      const dot = n.name.lastIndexOf(".");
+      if (dot >= 0) set.add(n.name.slice(dot));
+    } else {
+      (n.children || []).forEach(walk);
     }
-  });
-  if (filePaths.length === 0) {
-    showAlert("No files selected.", "warning", "reportAlerts");
-    return;
-  }
-  // Get the root folder (from the folderPath input) and checkbox value.
-  const rootFolder = folderPathInput.value.trim();
-  const includeTree = includeTreeCheckbox && includeTreeCheckbox.checked;
-  vscode.postMessage({ command: 'generateReport', files: filePaths, rootFolder, includeTree });
-});
+  })(node);
+  return set;
+}
 
-// Render the directory tree recursively with collapsible subfolders
-function renderTree(node) {
+function renderTree(expandRoot = false) {
+  treeContainer.innerHTML = "";
+  if (!currentTree) return;
   const ul = document.createElement("ul");
   ul.className = "tree";
-  ul.appendChild(renderNode(node));
-  return ul;
+  ul.appendChild(renderNode(currentTree));
+  treeContainer.appendChild(ul);
+
+  if (expandRoot) {
+    const rootLi = treeContainer.querySelector(":scope > ul > li");
+    const firstUl = rootLi?.querySelector(":scope > ul");
+    if (firstUl) {
+      firstUl.style.display = "block";
+      const folderEmoji = rootLi.querySelector(":scope > div .folder-emoji");
+      if (folderEmoji) folderEmoji.textContent = "📂";
+    }
+  }
+}
+
+function isVisibleByFilters(name) {
+  if (selectedExtFilters.size === 0) return true;
+  const dot = name.lastIndexOf(".");
+  const ext = dot >= 0 ? name.slice(dot) : "";
+  return selectedExtFilters.has(ext);
 }
 
 function renderNode(node) {
   const li = document.createElement("li");
-  const labelDiv = document.createElement("div");
-
+  li.className = "tree-item";
   if (node.type === "directory") {
-    const labelSpan = document.createElement("span");
-    labelSpan.classList.add("folder-label");
+    li.dataset.path = node.path;
+    const row = document.createElement("div");
 
-    if (Array.isArray(node.children) && node.children.length > 0) {
-      const toggleIcon = document.createElement("span");
-      toggleIcon.classList.add("folder-icon");
-      toggleIcon.textContent = "►";
-      labelSpan.appendChild(toggleIcon);
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.className = "form-check-input me-1 folder-cb";
+    cb.dataset.type = "dir";
 
-      const folderText = document.createElement("span");
-      folderText.textContent = " " + node.name;
-      labelSpan.appendChild(folderText);
-      labelDiv.appendChild(labelSpan);
+    const folderEmoji = document.createElement("span");
+    folderEmoji.className = "icon folder-emoji";
+    folderEmoji.textContent = "📁";
 
-      const subUl = document.createElement("ul");
-      subUl.style.display = "none";
-      node.children.forEach(child => {
-        subUl.appendChild(renderNode(child));
-      });
-      li.appendChild(labelDiv);
-      li.appendChild(subUl);
+    const label = document.createElement("span");
+    label.className = "folder-label";
+    label.textContent = " " + (node.name || "/");
 
-      labelSpan.addEventListener("click", () => {
-        if (subUl.style.display === "none") {
-          subUl.style.display = "block";
-          toggleIcon.textContent = "▼";
-        } else {
-          subUl.style.display = "none";
-          toggleIcon.textContent = "►";
-        }
-      });
-    } else {
-      labelSpan.textContent = "📁 " + node.name;
-      labelDiv.appendChild(labelSpan);
-      li.appendChild(labelDiv);
-    }
+    row.appendChild(cb);
+    row.appendChild(folderEmoji);
+    row.appendChild(label);
+    li.appendChild(row);
+
+    const sub = document.createElement("ul");
+    sub.style.display = "none";
+
+    (node.children || []).forEach(child => sub.appendChild(renderNode(child)));
+    li.appendChild(sub);
+
+    const toggle = () => {
+      const open = sub.style.display !== "none";
+      sub.style.display = open ? "none" : "block";
+      folderEmoji.textContent = open ? "📁" : "📂";
+      saveState();
+    };
+    label.addEventListener("click", toggle);
+    folderEmoji.addEventListener("click", toggle);
+
+    cb.addEventListener("change", () => {
+      setChildrenSelection(sub, cb.checked);
+      updateAncestors(li);
+      saveState();
+    });
+
   } else {
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.dataset.type = node.type;
-    checkbox.dataset.path = node.path;
-    const checkboxId = "checkbox-" + Math.random().toString(36).substr(2, 9);
-    checkbox.id = checkboxId;
+    if (!isVisibleByFilters(node.name)) li.style.display = "none";
+
+    const row = document.createElement("div");
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.className = "form-check-input me-1";
+    cb.dataset.type = "file"; cb.dataset.path = node.path;
+
+    const fileEmoji = document.createElement("span");
+    fileEmoji.className = "icon";
+    fileEmoji.textContent = "📄";
 
     const label = document.createElement("label");
-    label.setAttribute("for", checkboxId);
-    label.innerHTML = " 📄 " + node.name;
+    label.textContent = " " + node.name;
 
-    labelDiv.appendChild(checkbox);
-    labelDiv.appendChild(label);
-    li.appendChild(labelDiv);
+    row.appendChild(cb);
+    row.appendChild(fileEmoji);
+    row.appendChild(label);
+    li.appendChild(row);
+
+    // Clicking the file name (and icon) toggles selection
+    const toggleFileSelection = () => {
+      cb.checked = !cb.checked;
+      updateAncestors(li);
+      saveState();
+    };
+    label.addEventListener("click", toggleFileSelection);
+    fileEmoji.addEventListener("click", toggleFileSelection);
+
+    cb.addEventListener("change", () => { updateAncestors(li); saveState(); });
   }
   return li;
 }
-
-// Copy to clipboard
-copyReportBtn.addEventListener("click", () => {
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(reportOutput.value).then(() => {
-      showAlert("Copied report to clipboard.", "info", "reportAlerts");
-    }).catch(() => {
-      showAlert("Failed to copy report.", "danger", "reportAlerts");
-    });
-  } else {
-    reportOutput.select();
-    document.execCommand("copy");
-    showAlert("Copied report to clipboard.", "info", "reportAlerts");
-  }
-});
-
-// Load config on startup
-function loadConfig() {
-  vscode.postMessage({ command: 'getConfig' });
+function setChildrenSelection(ul, checked) {
+  ul.querySelectorAll('input[type="checkbox"]').forEach(i => { i.checked = checked; i.indeterminate = false; });
 }
-loadConfig();
+function updateAncestors(li) {
+  let parent = li.parentElement?.closest("li");
+  while (parent) {
+    const cb = parent.querySelector(":scope > div > input.folder-cb");
+    if (cb) {
+      const inputs = parent.querySelectorAll(":scope > ul > li:not([style*='display: none']) input[type='checkbox']");
+      if (inputs.length === 0) {
+        cb.checked = false;
+        cb.indeterminate = false;
+        continue;
+      }
+      const checkedCount = Array.from(inputs).filter(i => i.checked).length;
+      cb.checked = checkedCount === inputs.length;
+      cb.indeterminate = checkedCount > 0 && checkedCount < inputs.length;
+    }
+    parent = parent.parentElement?.closest("li");
+  }
+}
 
-// Save settings button
-saveSettingsBtn.addEventListener("click", () => {
-  const extStr = textExtensionsInput.value.trim();
-  const defExcStr = defaultExcludedInput.value.trim();
-  const extArr = extStr ? extStr.split(",").map(s => s.trim()).filter(s => s) : [];
-  const defExcArr = defExcStr ? defExcStr.split(",").map(s => s.trim()).filter(s => s) : [];
-  const saveTarget = document.querySelector('input[name="saveTarget"]:checked').value;
-  vscode.postMessage({ command: 'saveConfig', config: { TEXT_EXTENSIONS: extArr, DEFAULT_EXCLUDED_FOLDERS: defExcArr }, target: saveTarget });
+selectAllBtn.addEventListener("click", () => {
+  treeContainer.querySelectorAll("input[type='checkbox']").forEach(i => { i.checked = true; i.indeterminate = false; });
+  saveState();
 });
+selectNoneBtn.addEventListener("click", () => {
+  treeContainer.querySelectorAll("input[type='checkbox']").forEach(i => { i.checked = false; i.indeterminate = false; });
+  saveState();
+});
+expandAllBtn.addEventListener("click", () => {
+  treeContainer.querySelectorAll("li > ul").forEach(ul => ul.style.display = "block");
+  treeContainer.querySelectorAll(".folder-emoji").forEach(el => el.textContent = "📂");
+  saveState();
+});
+collapseAllBtn.addEventListener("click", () => {
+  treeContainer.querySelectorAll("li > ul").forEach(ul => ul.style.display = "none");
+  treeContainer.querySelectorAll(".folder-emoji").forEach(el => el.textContent = "📁");
+  saveState();
+});
+
+function renderExtChips(exts) {
+  extChips.innerHTML = "";
+  exts.forEach(ext => {
+    const b = document.createElement("span");
+    b.className = "chip"; b.textContent = ext;
+    b.addEventListener("click", () => {
+      if (selectedExtFilters.has(ext)) {
+        selectedExtFilters.delete(ext);
+      } else {
+        selectedExtFilters.add(ext);
+      }
+      const state = captureState();
+      renderTree();
+      applyState(state);
+      saveState();
+    });
+    extChips.appendChild(b);
+  });
+}
+
+generateBtn.addEventListener("click", () => {
+  const files = Array.from(treeContainer.querySelectorAll("input[type='checkbox'][data-type='file']:checked"))
+    .map(cb => cb.dataset.path);
+  // THIS IS THE KEY CHANGE: The 'if (files.length === 0) return;' check is now removed.
+  const rootFolder = folderPathInput.value.trim();
+  const includeTree = !!includeTreeCb.checked;
+  const includeInstructions = !!includeInstructionsCb.checked;
+  setBusy(true);
+  vscode.postMessage({ command: "generateReport", files, rootFolder, includeTree, includeInstructions });
+});
+
+copyBtn.addEventListener("click", async () => {
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(reportOutput.value || "");
+    else { reportOutput.select(); document.execCommand("copy"); }
+  } catch {}
+});
+
+saveSettingsBtn.addEventListener("click", () => {
+  const extArr = textExtensionsInput.value.trim()
+    ? textExtensionsInput.value.split(",").map(s => s.trim()).filter(Boolean) : [];
+  const defExcArr = defaultExcludedInput.value.trim()
+    ? defaultExcludedInput.value.split(",").map(s => s.trim()).filter(Boolean) : [];
+  const target = document.querySelector('input[name="saveTarget"]:checked').value;
+  setSettingsMessage("");
+  vscode.postMessage({ command: "saveConfig", config: { TEXT_EXTENSIONS: extArr, DEFAULT_EXCLUDED_FOLDERS: defExcArr }, target });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target && ["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName)) return;
+  if (e.key.toLowerCase() === "a") { e.preventDefault(); selectAllBtn.click(); }
+  if (e.key.toLowerCase() === "n") { e.preventDefault(); selectNoneBtn.click(); }
+  if (e.key.toLowerCase() === "g") { e.preventDefault(); generateBtn.click(); }
+});
+
+function captureState() {
+  const checkedFiles = Array.from(treeContainer.querySelectorAll("input[type='checkbox'][data-type='file']:checked"))
+    .map(cb => cb.dataset.path);
+  const expandedFolders = Array.from(treeContainer.querySelectorAll("li[data-path]"))
+    .filter(li => li.querySelector(":scope > ul")?.style.display === "block")
+    .map(li => li.dataset.path);
+
+  return {
+    folder: folderPathInput.value,
+    includeTree: includeTreeCb.checked,
+    includeInstructions: includeInstructionsCb.checked,
+    chips: Array.from(selectedExtFilters),
+    checkedFiles,
+    expandedFolders,
+  };
+}
+
+function applyState(state) {
+  if (!state) return;
+  folderPathInput.value = state.folder || folderPathInput.value;
+  includeTreeCb.checked = !!state.includeTree;
+  includeInstructionsCb.checked = state.includeInstructions !== false;
+  selectedExtFilters = new Set(state.chips || []);
+  Array.from(extChips.children).forEach(ch => ch.classList.toggle("active", selectedExtFilters.has(ch.textContent)));
+  if (state.checkedFiles?.length) {
+    const map = new Set(state.checkedFiles);
+    treeContainer.querySelectorAll("input[type='checkbox'][data-type='file']").forEach(cb => { if (map.has(cb.dataset.path)) cb.checked = true; });
+    treeContainer.querySelectorAll("li[data-path]").forEach(li => updateAncestors(li));
+  }
+  if (state.expandedFolders?.length) {
+    const expandedSet = new Set(state.expandedFolders);
+    treeContainer.querySelectorAll("li[data-path]").forEach(li => {
+      if (expandedSet.has(li.dataset.path)) {
+        const sub = li.querySelector(":scope > ul");
+        const folderEmoji = li.querySelector(":scope > div .folder-emoji");
+        if (sub) sub.style.display = "block";
+        if (folderEmoji) folderEmoji.textContent = "📂";
+      }
+    });
+  }
+}
+
+function saveState() { vscode.setState(captureState()); }
+function restoreState() { applyState(vscode.getState()); }

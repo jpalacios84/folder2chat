@@ -3,107 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <title>folder2chat</title>
-  <!-- Bootstrap CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-  <!-- Local CSS -->
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none';
+                 img-src %CSP_SOURCE% https: data:;
+                 style-src %CSP_SOURCE% https: 'unsafe-inline';
+                 script-src %CSP_SOURCE% https: 'unsafe-inline';
+                 font-src %CSP_SOURCE% https:;">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="%STYLE_URI%" />
 </head>
 <body>
-  <div class="container my-4">
-    <!-- Card: folder2chat -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h2 class="h5 m-0">folder2chat</h2>
-      </div>
-      <div class="card-body">
-        <!-- Folder selection row -->
-        <div class="mb-3 d-flex flex-column flex-sm-row align-items-sm-center">
-          <button id="browseFolderBtn" class="btn btn-secondary me-3">Browse Folder</button>
-          <div class="mt-2 mt-sm-0" style="flex:1;">
-            <label for="folderPath" class="form-label">Selected Folder</label>
-            <input type="text" class="form-control" id="folderPath" placeholder="Folder path" />
-          </div>
+  <!-- Sticky toolbar that matches the page width -->
+  <div class="toolbar shadow-sm">
+    <!-- FLUID: use full width -->
+    <div class="page page-fluid d-flex gap-2 align-items-center">
+      <button id="browseFolderBtn" class="btn btn-secondary btn-sm">Browse</button>
+      <input id="folderPath" type="text" class="form-control form-control-sm" placeholder="Folder path"/>
+      <button id="refreshTreeBtn" class="btn btn-secondary btn-sm">Refresh</button>
+
+      <div class="vr mx-1"></div>
+
+      <div id="extChips" class="d-flex gap-1 flex-wrap"></div>
+
+      <div class="ms-auto d-flex gap-3 align-items-center flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-check-label small" for="includeTreeCheckbox">Include tree</label>
+          <input class="form-check-input" type="checkbox" id="includeTreeCheckbox">
         </div>
-        <!-- Tree container -->
-        <div id="treeContainer" class="my-3"></div>
-        <div class="d-flex gap-3 mt-3">
-          <button id="refreshTreeBtn" class="btn btn-secondary">Refresh Tree</button>
-          <button id="selectAllBtn" class="btn btn-secondary">Select All</button>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-check-label small" for="includeInstructionsCheckbox">Include instructions</label>
+          <input class="form-check-input" type="checkbox" id="includeInstructionsCheckbox" checked>
         </div>
-        <hr>
-        <div class="d-flex gap-3 mt-3 align-items-center">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="includeTreeCheckbox">
-            <label class="form-check-label" for="includeTreeCheckbox">Include tree in report</label>
-          </div>
-          <button id="generateReportBtn" class="btn btn-success">Generate Report</button>
-        </div>
-      </div>
-    </div>
-    <!-- Accordion: Global Settings -->
-    <div class="accordion mb-4" id="settingsAccordion">
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="headingSettings">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSettings" aria-expanded="false" aria-controls="collapseSettings">
-            Settings
-          </button>
-        </h2>
-        <div id="collapseSettings" class="accordion-collapse collapse" aria-labelledby="headingSettings" data-bs-parent="#settingsAccordion">
-          <div class="accordion-body">
-            <div id="settingsAlerts"></div>
-            <div class="mb-3" style="max-width: 500px;">
-              <label for="limitInput" class="form-label">Items per folder (limit)</label>
-              <input type="number" class="form-control" id="limitInput" value="100" />
-            </div>
-            <div class="mb-3" style="max-width: 500px;">
-              <label for="textExtensionsInput" class="form-label">Text Extensions (comma‐separated)</label>
-              <input type="text" class="form-control" id="textExtensionsInput" placeholder=".txt, .md, .py" />
-            </div>
-            <div class="mb-3" style="max-width: 500px;">
-              <label for="defaultExcludedInput" class="form-label">Default Excluded Folders (comma‐separated)</label>
-              <input type="text" class="form-control" id="defaultExcludedInput" placeholder=".git, node_modules" />
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Save Settings To:</label>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="saveTarget" id="saveTargetWorkspace" value="workspace" checked>
-                <label class="form-check-label" for="saveTargetWorkspace">
-                  Workspace (Project-specific)
-                </label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="saveTarget" id="saveTargetGlobal" value="global">
-                <label class="form-check-label" for="saveTargetGlobal">
-                  User (Global)
-                </label>
-              </div>
-            </div>
-            <button id="saveSettingsBtn" class="btn btn-secondary">Save Settings</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Card: Report -->
-    <div class="card">
-      <h3 id="reportHeadline" class="mt-3 mb-3 visually-hidden">Report Anchor</h3>
-      <div class="card-header">
-        <h2 class="h5 m-0">Report</h2>
-      </div>
-      <div class="card-body">
-        <div id="reportAlerts"></div>
-        <div class="mb-3 d-flex justify-content-between align-items-center">
-          <button id="copyReportBtn" class="btn btn-secondary">Copy to Clipboard</button>
-        </div>
-        <textarea id="reportOutput" class="form-control" rows="24" readonly style="font-family: monospace;"></textarea>
+        <button id="generateReportBtn" class="btn btn-success btn-sm">Generate</button>
       </div>
     </div>
   </div>
-  <!-- Bootstrap Bundle JS -->
+
+  <div id="spinner" class="spinner-overlay d-none">
+    <div class="spinner-border" role="status" aria-label="loading"></div>
+  </div>
+
+  <!-- Main area fills viewport -->
+  <!-- FLUID: use full width -->
+  <div class="page page-fluid pad">
+    <!-- Settings -->
+    <div class="accordion mb-2" id="settingsAccordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingSettings">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#collapseSettings" aria-expanded="false" aria-controls="collapseSettings">
+            Settings
+          </button>
+        </h2>
+        <div id="collapseSettings" class="accordion-collapse collapse" aria-labelledby="headingSettings"
+             data-bs-parent="#settingsAccordion">
+          <div class="accordion-body">
+            <div id="settingsAlerts" class="small"></div>
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label for="limitInput" class="form-label">Items per folder (limit)</label>
+                <input type="number" class="form-control" id="limitInput" value="100" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="textExtensionsInput" class="form-label">Text Extensions (comma-sep)</label>
+                <input type="text" class="form-control" id="textExtensionsInput" placeholder=".txt, .md, .py" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="defaultExcludedInput" class="form-label">Default Excluded Folders</label>
+                <input type="text" class="form-control" id="defaultExcludedInput" placeholder=".git, node_modules" />
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">Save Settings To:</label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="saveTarget" id="saveTargetWorkspace" value="workspace" checked>
+                  <label class="form-check-label" for="saveTargetWorkspace">Workspace (Project)</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="saveTarget" id="saveTargetGlobal" value="global">
+                  <label class="form-check-label" for="saveTargetGlobal">User (Global)</label>
+                </div>
+              </div>
+            </div>
+
+            <button id="saveSettingsBtn" class="btn btn-secondary mt-3">Save Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <header class="panel-header">
+          <div class="d-flex align-items-center justify-content-between">
+            <strong>Folder</strong>
+            <div class="d-flex gap-2">
+              <button id="selectAllBtn" class="btn btn-outline-secondary btn-sm">Select All</button>
+              <button id="selectNoneBtn" class="btn btn-outline-secondary btn-sm">Select None</button>
+              <button id="expandAllBtn" class="btn btn-outline-secondary btn-sm">Expand</button>
+              <button id="collapseAllBtn" class="btn btn-outline-secondary btn-sm">Collapse</button>
+            </div>
+          </div>
+        </header>
+        <div id="treeContainer" class="tree-scroll"></div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-header">
+          <div class="d-flex align-items-center justify-content-between w-100">
+            <strong>Report</strong>
+            <div class="d-flex align-items-center gap-2">
+              <span id="statsBadge" class="badge bg-secondary-subtle text-body-secondary"></span>
+              <button id="copyReportBtn" class="btn btn-outline-secondary btn-sm">Copy</button>
+            </div>
+          </div>
+        </header>
+        <textarea id="reportOutput" class="form-control report-box" readonly spellcheck="false"></textarea>
+      </section>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Local JS -->
   <script src="%SCRIPT_URI%"></script>
 </body>
 </html>

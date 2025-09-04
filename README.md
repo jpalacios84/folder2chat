@@ -1,30 +1,87 @@
 # folder2chat
-Quickly copy/paste your code into an LLM. Vibes-based coding in 2025.
 
-![Screenshot of app](folder2chat_vs.png)
+A Visual Studio Code extension that helps you generate structured reports from project folders. Vibe-coding with friction if you will. I prefer to copy/paste from LLMs. Agents and auto-CLIs don't quite cut it for me yet. When I stop maintaining this tool (which I still use on a daily basis) you'll know I switched to agents.
 
-Copy the report and paste into your favorite LLM
+jose (Sept. 2025)
 
-![Another screenshot of app](folder2chat_report_vs.png)
+## Features
 
-Both the app and this README file were AI-generated because we're in 2025. I used mostly `o1` to few-shot the app, and `o3-mini-high` to review/patch the final product and produce this README.
+- **Browse & Load a Folder**  
+  Use the **Browse** or **Refresh** buttons to select a project folder and load its file tree.
 
-## To run the extension
+- **File Tree Navigation**  
+  - Displays a collapsible directory tree.
+  - Click **folder icons/labels** to expand or collapse directories.
+  - Click **file names or checkboxes** to select files.
 
-Find `folder2chat` in the extensions marketplace and install. `ctrl+p` and `>folder2chat`
+- **Filtering**  
+  - Extension chips are automatically populated from project files.  
+  - Click chips to filter the visible files by extension.  
+  - Selected chips persist until cleared.
 
-# Functionality
-## folder2chat
-- Browse Folder: Opens a system dialog (if tkinter is available) to pick a folder.
-- Refresh Tree: Displays a hierarchical view (tree) of the chosen folder. By default, each folder is limited to 100 items (folders/files).
-- Generate Report: Lets you check checkboxes next to individual files and produce a text-based “report” with their contents. Only files matching the allowed text extensions are included in the report (defaults: .txt, .md, .py, etc.).
+- **Selection Shortcuts**  
+  - **Select All** or **Select None** buttons.
+  - Expand/Collapse all directories.
+  - Keyboard shortcuts:  
+    - `A` → Select All  
+    - `N` → Select None  
+    - `G` → Generate Report
 
-## Global Settings
-- Items per folder (limit): Adjust how many entries are displayed per folder in the tree.
-- Text Extensions: Add or remove the file extensions recognized as “text” (affects which files will be included in the generated report).
-- Default Excluded Folders: Control which folders get skipped entirely (e.g., node_modules).
-- Save Settings: Saves the new settings to config.json so they persist across restarts.
+- **Report Generation**  
+  - Click **Generate** to create a Markdown report.  
+  - Includes:
+    - File contents (for selected files).
+    - Optional **Directory Tree** section.
+    - Optional **Instructions** section with agent rules.
+  - If no files or options are selected, the report contains:  
+    ```
+    Empty report!
+    ```
+  - Stats bubble shows counts for **files, lines, bytes, and ~tokens** (consistent across report and UI).
 
-## Report
-- Shows the final compiled text of all selected files (including any error notes if some files could not be read).
-- Copy to Clipboard: Copies the report text to your clipboard using the modern Clipboard API (with a legacy fallback).
+- **Settings**  
+  - Configure:
+    - Max items per folder.
+    - Default excluded folders (e.g., `.git`, `node_modules`).
+    - Allowed text extensions.
+  - Save settings to **workspace** or **global** scope.
+
+- **Layout & UX**  
+  - Flexible layout: tree and report panels expand to use available vertical and horizontal space.  
+  - Toolbar stays sticky at the top with horizontal scroll for chips if crowded.  
+  - Buttons have improved padding so they don’t rest directly against card edges.
+
+## Screenshot
+
+Here’s folder2chat in action inside VS Code:
+
+![folder2chat screenshot](folder2chat.png)
+
+## Usage
+
+1. Open VS Code and run the command:  
+````
+
+folder2chat: Open
+
+````
+2. Load a folder with **Browse** or **Refresh**.
+3. Adjust filters, expand/collapse directories, and select the files you want.
+4. Choose whether to include the **Tree** and/or **Instructions**.
+5. Click **Generate** to create the report.
+6. Copy the result using the **Copy** button.
+
+## Development
+
+- Clone the repo and run:
+
+```bash
+npm install
+npm run compile
+````
+
+* Press `F5` in VS Code to launch the extension in a development host window.
+
+## License
+
+[ISC](LICENSE)

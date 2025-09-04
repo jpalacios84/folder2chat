@@ -1,66 +1,50 @@
 {
-    "name": "folder2chat",
-    "displayName": "folder2chat",
-    "description": "Quickly copy/paste your code into an LLM. Vibe coding in 2025.",
-    "version": "0.1.0",
-    "publisher": "JosePalacios",
-    "engines": {
-        "vscode": "^1.96.0"
-    },
-    "categories": [
-        "Other"
+  "name": "folder2chat",
+  "displayName": "folder2chat",
+  "description": "Load code from a folder and generate an LLM-ready report (Markdown or JSON).",
+  "version": "0.1.0",
+  "publisher": "JosePalacios",
+  "engines": { "vscode": "^1.96.0" },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "folder2chat.start", "title": "folder2chat: Open" }
     ],
-    "activationEvents": [
-        
-    ],
-    "main": "./dist/extension.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "folder2chat.start",
-                "title": "folder2chat: Open"
-            }
-        ],
-        "configuration": {
-            "title": "folder2chat",
-            "properties": {
-                "folder2chat.textExtensions": {
-                    "type": "array",
-                    "default": [".txt", ".md", ".py", ".html", ".css", ".js", ".json", ".csv", ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx"],
-                    "description": "File extensions to be treated as text files for the report."
-                },
-                "folder2chat.defaultExcludedFolders": {
-                    "type": "array",
-                    "default": [".git", "__pycache__", ".vscode", ".idea", ".venv", "node_modules", "dist", "build", ".next"],
-                    "description": "Folders to be excluded from the directory tree by default."
-                }
-            }
+    "configuration": {
+      "title": "folder2chat",
+      "properties": {
+        "folder2chat.textExtensions": {
+          "type": "array",
+          "default": [".txt", ".md", ".py", ".html", ".css", ".js", ".json", ".csv", ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx"],
+          "description": "File extensions treated as text for the report."
+        },
+        "folder2chat.defaultExcludedFolders": {
+          "type": "array",
+          "default": [".git", "__pycache__", ".vscode", ".idea", ".venv", "node_modules", "dist", "build", ".next"],
+          "description": "Folders excluded from the directory tree."
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./"
-    },
-    "devDependencies": {
-        "@types/node": "^18.19.75",
-        "@types/vscode": "^1.96.0",
-        "typescript": "^4.9.0",
-        "vscode-test": "^1.6.0"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/jpalacios84/folder2chat.git"
-    },
-    "keywords": [
-        "LLM",
-        "coding",
-        "productivity"
-    ],
-    "author": "Jose Palacios",
-    "license": "ISC",
-    "icon": "icon.png",
-    "bugs": {
-        "url": "https://github.com/jpalacios84/folder2chat/issues"
-    },
-    "homepage": "https://github.com/jpalacios84/folder2chat#readme"
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.75",
+    "@types/vscode": "^1.96.0",
+    "typescript": "^4.9.0",
+    "vscode-test": "^1.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jpalacios84/folder2chat.git"
+  },
+  "keywords": ["LLM", "coding", "productivity"],
+  "author": "Jose Palacios",
+  "license": "ISC",
+  "icon": "icon.png",
+  "bugs": { "url": "https://github.com/jpalacios84/folder2chat/issues" },
+  "homepage": "https://github.com/jpalacios84/folder2chat#readme"
 }
