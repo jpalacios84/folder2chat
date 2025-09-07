@@ -2,7 +2,7 @@
   "name": "folder2chat",
   "displayName": "folder2chat",
   "description": "Load code from a folder and generate an LLM-ready report (Markdown or JSON).",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "JosePalacios",
   "engines": { "vscode": "^1.96.0" },
   "categories": ["Other"],
