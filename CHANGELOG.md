@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.1] - 2025-09-06
+### Changed
+- Fixed layout bug
+
 ## [0.1.0] - 2025-09-04
 ### Changed
 - **BREAKING CHANGE**: Deprecated the Python FastAPI application. The project is now solely a Visual Studio Code extension.

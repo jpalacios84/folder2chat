@@ -16,27 +16,45 @@ body {
 /* FLUID containers use full width */
 .page-fluid { max-width: none; width: 100%; }
 
+/* --- Toolbar --- */
 .toolbar {
-  --toolbar-h: 48px;
-  position: sticky; top: 0; z-index: 10;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: var(--vscode-sideBar-background);
   border-bottom: 1px solid var(--vscode-panel-border);
-  min-height: var(--toolbar-h);
-  display: flex; align-items: center;
+  /* let height grow naturally to avoid clipping */
+  display: flex;
+  align-items: stretch;
   margin-bottom: .5rem;
 }
 
-/* Keep toolbar on one line; allow horizontal scroll if crowded */
+/* Lay out controls; allow wrapping when crowded (prevents overlap/clipping) */
 .toolbar .page {
   display: flex;
   align-items: center;
-  gap: .5rem;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  gap: .5rem .75rem;      /* row-gap, col-gap */
+  flex-wrap: wrap;        /* allow second row when needed */
+  overflow-x: auto;       /* still scrolls horizontally if very wide */
   scrollbar-width: thin;
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+  box-sizing: border-box;
 }
 
-/* Chips rail: expand to use spare horizontal space */
+/* Make groups behave nicely when wrapping */
+.toolbar .page > * { flex: 0 0 auto; }
+
+/* Divider in the toolbar */
+.toolbar .vr {
+  align-self: stretch;
+  width: 1px;
+  background-color: var(--vscode-panel-border);
+  opacity: 1;
+  margin: 0 .25rem;
+}
+
+/* Chips rail: grows to consume spare space; scrolls horizontally if needed */
 #extChips {
   display: inline-flex;
   gap: .4rem;
@@ -47,6 +65,10 @@ body {
   min-width: 240px;
 }
 
+/* So the folder path input doesn’t collapse when wrapping */
+#folderPath { min-width: 260px; }
+
+/* --- Main layout --- */
 .pad {
   padding: .75rem 0;
   flex: 1 1 auto;
@@ -96,7 +118,7 @@ body {
   padding: .75rem;
 }
 
-/* Tree */
+/* --- Tree --- */
 ul.tree, ul.tree ul {
   list-style-type: none;
   margin: 0;
@@ -110,7 +132,7 @@ ul.tree, ul.tree ul {
 /* Make file labels clickable affordance match folders */
 .tree-item label { cursor: pointer; }
 
-/* Chips look */
+/* --- Chips --- */
 #extChips .chip {
   border: 1px solid var(--vscode-button-border);
   padding: .1rem .5rem;
@@ -124,7 +146,7 @@ ul.tree, ul.tree ul {
   color: var(--vscode-button-foreground);
 }
 
-/* Spinner overlay */
+/* --- Spinner overlay --- */
 .spinner-overlay {
   position: fixed; inset: 0;
   background: color-mix(in oklab, var(--vscode-editor-background) 60%, transparent);
@@ -133,12 +155,13 @@ ul.tree, ul.tree ul {
 }
 .d-none { display: none !important; }
 
+/* --- Responsive --- */
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr; }
   #extChips { min-width: 160px; }
 }
 
-/* Accordion Theming for VS Code */
+/* --- Accordion Theming for VS Code --- */
 .accordion-item {
   background-color: var(--vscode-sideBar-background);
   border: 1px solid var(--vscode-panel-border);
