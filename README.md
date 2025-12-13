@@ -2,7 +2,7 @@
 
 A Visual Studio Code extension that helps you generate structured reports from project folders. Vibe-coding with friction if you will. I prefer to copy/paste from LLMs. Agents and auto-CLIs don't quite cut it for me yet. When I stop maintaining this tool (which I still use on a daily basis) you'll know I switched to agents.
 
-jose (Sept. 2025)
+jose (December 2025)
 
 ## Features
 

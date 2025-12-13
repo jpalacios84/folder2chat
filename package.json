@@ -2,7 +2,7 @@
   "name": "folder2chat",
   "displayName": "folder2chat",
   "description": "Load code from a folder and generate an LLM-ready report (Markdown or JSON).",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "JosePalacios",
   "engines": { "vscode": "^1.96.0" },
   "categories": ["Other"],
@@ -21,7 +21,7 @@
       "properties": {
         "folder2chat.textExtensions": {
           "type": "array",
-          "default": [".txt", ".md", ".py", ".html", ".css", ".js", ".json", ".csv", ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx"],
+          "default": [".txt", ".md", ".py", ".html", ".css", ".js", ".json", ".csv", ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx", "Dockerfile", "Makefile"],
           "description": "File extensions treated as text for the report."
         },
         "folder2chat.defaultExcludedFolders": {

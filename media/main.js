@@ -162,7 +162,12 @@ function collectProjectExts(node) {
     if (!n) return;
     if (n.type === "file") {
       const dot = n.name.lastIndexOf(".");
-      if (dot >= 0) set.add(n.name.slice(dot));
+      // If dot > 0, standard ext. If <= 0 (Dockerfile or .env), use whole name.
+      if (dot > 0) {
+        set.add(n.name.slice(dot));
+      } else {
+        set.add(n.name);
+      }
     } else {
       (n.children || []).forEach(walk);
     }
@@ -192,7 +197,8 @@ function renderTree(expandRoot = false) {
 function isVisibleByFilters(name) {
   if (selectedExtFilters.size === 0) return true;
   const dot = name.lastIndexOf(".");
-  const ext = dot >= 0 ? name.slice(dot) : "";
+  // Matching logic: if dot > 0, use ext. Else use name.
+  const ext = dot > 0 ? name.slice(dot) : name;
   return selectedExtFilters.has(ext);
 }
 
@@ -339,12 +345,13 @@ function renderExtChips(exts) {
 generateBtn.addEventListener("click", () => {
   const files = Array.from(treeContainer.querySelectorAll("input[type='checkbox'][data-type='file']:checked"))
     .map(cb => cb.dataset.path);
-  // THIS IS THE KEY CHANGE: The 'if (files.length === 0) return;' check is now removed.
   const rootFolder = folderPathInput.value.trim();
   const includeTree = !!includeTreeCb.checked;
   const includeInstructions = !!includeInstructionsCb.checked;
+  // Capture active filters so the report tree matches the UI tree
+  const activeExtensions = Array.from(selectedExtFilters);
   setBusy(true);
-  vscode.postMessage({ command: "generateReport", files, rootFolder, includeTree, includeInstructions });
+  vscode.postMessage({ command: "generateReport", files, rootFolder, includeTree, includeInstructions, activeExtensions });
 });
 
 copyBtn.addEventListener("click", async () => {

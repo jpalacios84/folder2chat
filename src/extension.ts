@@ -76,14 +76,15 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         case 'generateReport': {
-          const { files, includeTree, rootFolder, includeInstructions } = message;
+          const { files, includeTree, rootFolder, includeInstructions, activeExtensions } = message;
 
           // Always generate; the bundle handles the "empty" case.
           const { report, stats } = generateReportBundle(
             files ?? [],
             !!includeTree,
             rootFolder,
-            !!includeInstructions
+            !!includeInstructions,
+            activeExtensions // Pass active UI filters to report generator
           );
 
           panel.webview.postMessage({

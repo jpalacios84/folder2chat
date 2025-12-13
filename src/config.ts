@@ -1,6 +1,7 @@
 export const DEFAULT_TEXT_EXTENSIONS = [
     ".txt", ".md", ".py", ".html", ".css", ".js", ".json", ".csv",
-    ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx"
+    ".ts", ".java", ".c", ".cpp", ".cs", ".php", ".sh", ".jsx",
+    "Dockerfile", "Makefile"
 ];
 
 export const DEFAULT_EXCLUDED_FOLDERS = [

@@ -43,7 +43,8 @@ export function generateReportBundle(
   filePaths: string[],
   includeTree: boolean = true,
   rootFolder?: string,
-  includeInstructions: boolean = true
+  includeInstructions: boolean = true,
+  allowedExtensions?: string[]
 ): { report: string; stats: Stats } {
 
   // "Empty report!" only when nothing is requested or selected.
@@ -98,7 +99,9 @@ export function generateReportBundle(
 
   // Directory Tree is independent of includeInstructions
   if (includeTree && commonBase) {
-    const treeText = generateTreeText(commonBase);
+    // If specific filters provided (from UI chips), use them. Otherwise default to config.
+    const exts = allowedExtensions ?? config.TEXT_EXTENSIONS;
+    const treeText = generateTreeText(commonBase, exts);
     if (treeText) {
       out.push('## Directory Tree');
       out.push('```');
@@ -130,9 +133,10 @@ export function generateReport(
   filePaths: string[],
   includeTree: boolean = true,
   rootFolder?: string,
-  includeInstructions: boolean = true
+  includeInstructions: boolean = true,
+  allowedExtensions?: string[]
 ): string {
-  return generateReportBundle(filePaths, includeTree, rootFolder, includeInstructions).report;
+  return generateReportBundle(filePaths, includeTree, rootFolder, includeInstructions, allowedExtensions).report;
 }
 
 /* helpers */
@@ -174,28 +178,52 @@ function commonDirectory(pathsArr: string[]): string {
   return leadingSep + commonParts.join(path.sep);
 }
 
-function generateTreeText(rootPath: string, prefix: string = ''): string {
-  let lines: string[] = [];
+function generateTreeText(rootPath: string, allowedExtensions: string[], prefix: string = ''): string {
   let entries: string[] = [];
   try {
     entries = fs.readdirSync(rootPath).sort((a, b) => a.localeCompare(b));
   } catch {
     return '';
   }
-  const filtered = entries.filter(e => !config.DEFAULT_EXCLUDED_FOLDERS.includes(e));
-  filtered.forEach((entry, i) => {
+
+  // Filter entries based on excluded folders AND active extension filters
+  const validEntries = entries.filter(entry => {
+    // 1. Exclude blocked folders
+    if (config.DEFAULT_EXCLUDED_FOLDERS.includes(entry)) return false;
+
     const full = path.join(rootPath, entry);
-    const isDir = fs.existsSync(full) && fs.statSync(full).isDirectory();
-    const last = i === filtered.length - 1;
+    let stat;
+    try { stat = fs.statSync(full); } catch { return false; }
+
+    // 2. Directories are included (to match UI tree structure, even if empty)
+    if (stat.isDirectory()) return true;
+
+    // 3. Files must match allowed extensions
+    const ext = path.extname(entry).toLowerCase();
+    // If ext is empty, use the filename itself (to match Dockerfile, .env, etc.)
+    const key = ext || entry;
+    
+    // Check if either the extension or the exact filename is in the allowed list
+    return allowedExtensions.some(allowed => allowed.toLowerCase() === key.toLowerCase());
+  });
+
+  let lines: string[] = [];
+  validEntries.forEach((entry, i) => {
+    const full = path.join(rootPath, entry);
+    // Safe to stat again (or we could have cached it, but FS overhead is low here)
+    const isDir = fs.statSync(full).isDirectory();
+    const last = i === validEntries.length - 1;
     const connector = last ? '└── ' : '├── ';
+
     lines.push(prefix + connector + entry);
     if (isDir) {
       const extension = last ? '    ' : '│   ';
-      const sub = generateTreeText(full, prefix + extension);
+      const sub = generateTreeText(full, allowedExtensions, prefix + extension);
       if (sub) {
         lines.push(sub);
       }
     }
   });
+
   return lines.join('\n');
 }

@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2] - 2025-12-12
+### Fixed
+- Directory tree in generated reports now respects active UI filters/chips
+- Fixed issue where extensionless files (e.g., Dockerfile, Makefile) were invisible in the tree
+- Fixed contrast issues in Settings labels
+
+### Changed
+- Modernized Settings UI to better match VS Code native styling
+- Refactored internal Webview logic into ES modules for better maintainability
+
 ## [0.1.1] - 2025-09-06
 ### Changed
 - Fixed layout bug

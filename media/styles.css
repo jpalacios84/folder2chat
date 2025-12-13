@@ -23,29 +23,25 @@ body {
   z-index: 10;
   background: var(--vscode-sideBar-background);
   border-bottom: 1px solid var(--vscode-panel-border);
-  /* let height grow naturally to avoid clipping */
   display: flex;
   align-items: stretch;
   margin-bottom: .5rem;
 }
 
-/* Lay out controls; allow wrapping when crowded (prevents overlap/clipping) */
 .toolbar .page {
   display: flex;
   align-items: center;
-  gap: .5rem .75rem;      /* row-gap, col-gap */
-  flex-wrap: wrap;        /* allow second row when needed */
-  overflow-x: auto;       /* still scrolls horizontally if very wide */
+  gap: .5rem .75rem;
+  flex-wrap: wrap;
+  overflow-x: auto;
   scrollbar-width: thin;
   padding-top: .5rem;
   padding-bottom: .5rem;
   box-sizing: border-box;
 }
 
-/* Make groups behave nicely when wrapping */
 .toolbar .page > * { flex: 0 0 auto; }
 
-/* Divider in the toolbar */
 .toolbar .vr {
   align-self: stretch;
   width: 1px;
@@ -54,7 +50,7 @@ body {
   margin: 0 .25rem;
 }
 
-/* Chips rail: grows to consume spare space; scrolls horizontally if needed */
+/* Chips rail */
 #extChips {
   display: inline-flex;
   gap: .4rem;
@@ -65,7 +61,6 @@ body {
   min-width: 240px;
 }
 
-/* So the folder path input doesn’t collapse when wrapping */
 #folderPath { min-width: 260px; }
 
 /* --- Main layout --- */
@@ -97,12 +92,12 @@ body {
 .panel-header {
   background: var(--vscode-sideBarSectionHeader-background);
   border-bottom: 1px solid var(--vscode-panel-border);
-  padding: .5rem .75rem;
+  padding: .4rem .75rem;
   flex: 0 0 auto;
 }
 
 .panel-header .btn,
-.toolbar .btn { padding-bottom: .4rem; }
+.toolbar .btn { padding-bottom: .3rem; padding-top: .3rem; font-size: 0.85rem; }
 
 .tree-scroll { padding: .5rem .75rem; overflow: auto; flex: 1 1 auto; }
 
@@ -116,6 +111,78 @@ body {
   resize: none;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   padding: .75rem;
+  font-size: 0.85rem;
+}
+
+/* --- Settings Modernization --- */
+.settings-panel {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  background-color: var(--vscode-sideBar-background);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.settings-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  background-color: var(--vscode-sideBarSectionHeader-background);
+  user-select: none;
+  font-size: 0.9rem;
+}
+
+.settings-summary::-webkit-details-marker { display: none; }
+
+.settings-summary:hover {
+  background-color: color-mix(in srgb, var(--vscode-sideBarSectionHeader-background), var(--vscode-list-hoverBackground) 20%);
+}
+
+.settings-summary .chevron::after {
+  content: "›";
+  display: inline-block;
+  font-weight: bold;
+  transform: rotate(90deg);
+  transition: transform 0.2s;
+  font-family: sans-serif;
+  margin-left: 0.5rem;
+}
+
+details[open] .settings-summary .chevron::after {
+  transform: rotate(270deg);
+}
+
+.settings-body {
+  padding: 1rem;
+  background-color: var(--vscode-sideBar-background);
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.settings-label {
+  font-size: 0.7rem;
+  color: var(--vscode-foreground);
+  opacity: 0.8;
+}
+
+/* Form inputs matching VS Code style */
+.form-control, .form-select {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+}
+
+.form-control:focus {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.form-check-label {
+  color: var(--vscode-foreground);
 }
 
 /* --- Tree --- */
@@ -123,33 +190,36 @@ ul.tree, ul.tree ul {
   list-style-type: none;
   margin: 0;
   padding-left: 1rem;
-  border-left: 1px dashed var(--vscode-foreground);
+  border-left: 1px dashed var(--vscode-tree-indentGuidesStroke);
 }
-.tree-item { margin: .15rem 0; }
+.tree-item { margin: .1rem 0; font-size: 0.9rem; }
 .folder-label { font-weight: 600; cursor: pointer; }
-.icon { margin-right: .35rem; }
-
-/* Make file labels clickable affordance match folders */
+.icon { margin-right: .35rem; opacity: 0.8; }
 .tree-item label { cursor: pointer; }
 
 /* --- Chips --- */
 #extChips .chip {
   border: 1px solid var(--vscode-button-border);
-  padding: .1rem .5rem;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  padding: .1rem .6rem;
   border-radius: 999px;
   font-size: .75rem;
   cursor: pointer;
   user-select: none;
+  transition: opacity 0.2s;
 }
+#extChips .chip:hover { opacity: 0.8; }
 #extChips .chip.active {
   background: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-background);
 }
 
 /* --- Spinner overlay --- */
 .spinner-overlay {
   position: fixed; inset: 0;
-  background: color-mix(in oklab, var(--vscode-editor-background) 60%, transparent);
+  background: color-mix(in srgb, var(--vscode-editor-background) 60%, transparent);
   display: grid; place-items: center;
   z-index: 20;
 }
@@ -159,71 +229,4 @@ ul.tree, ul.tree ul {
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr; }
   #extChips { min-width: 160px; }
-}
-
-/* --- Accordion Theming for VS Code --- */
-.accordion-item {
-  background-color: var(--vscode-sideBar-background);
-  border: 1px solid var(--vscode-panel-border);
-}
-
-.accordion-button {
-  background-color: var(--vscode-sideBarSectionHeader-background);
-  color: var(--vscode-foreground);
-  font-weight: bold;
-}
-
-.accordion-button:focus {
-  z-index: 3;
-  border-color: var(--vscode-focusBorder);
-  outline: 0;
-  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
-}
-
-.accordion-button:not(.collapsed) {
-  color: var(--vscode-foreground);
-  background-color: var(--vscode-sideBarSectionHeader-background);
-  box-shadow: inset 0 -1px 0 var(--vscode-panel-border);
-}
-
-.accordion-button::after {
-  filter: invert(1) grayscale(1);
-}
-
-/* Settings form controls */
-.accordion-body .form-label,
-.accordion-body .form-check-label {
-  color: var(--vscode-input-foreground, #cccccc);
-}
-
-.accordion-body .form-control {
-  background-color: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
-}
-
-.accordion-body .form-control::placeholder {
-  color: var(--vscode-input-placeholderForeground);
-}
-
-.accordion-body .form-control:focus {
-  background-color: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border-color: var(--vscode-focusBorder);
-  box-shadow: none;
-}
-
-.accordion-body .form-check-input {
-  background-color: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
-}
-
-.accordion-body .form-check-input:checked {
-  background-color: var(--vscode-button-background);
-  border-color: var(--vscode-button-background);
-}
-
-.accordion-body .form-check-input:focus {
-  border-color: var(--vscode-focusBorder);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--vscode-focusBorder) 30%, transparent);
 }

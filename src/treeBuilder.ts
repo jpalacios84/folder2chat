@@ -39,7 +39,10 @@ export function buildDirectoryTree(rootPath: string, limit: number = 100, exclud
       count++;
     } else {
       const ext = path.extname(entry).toLowerCase();
-      if (allowed.has(ext)) {
+      // If ext is empty (e.g. Dockerfile or .env), check the filename itself
+      const key = ext || entry.toLowerCase();
+      
+      if (allowed.has(key) || allowed.has(entry)) {
         tree.children.push({ name: entry, path: full, type: 'file' });
         count++;
       }
